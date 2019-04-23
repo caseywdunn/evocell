@@ -34,7 +34,8 @@ Please install the following tools on your laptop before you arrive. This will r
 
 - [Atom](https://atom.io) text editor
 
-- [cyberduck](https://cyberduck.io/?l=en) file transfer tool (or equivalent if you have Linux)
+- [RStudio](https://www.rstudio.com/products/rstudio/download/#download)
+
 
 ### Apple macOS
 
@@ -42,9 +43,9 @@ Please install the following tools on your laptop before you arrive. This will r
 
 ### Windows
 
-- [PuTTY](http://www.putty.org) ssh client
+- [git](https://git-scm.com)
 
-- Install [Virtual Box](https://www.virtualbox.org/wiki/Downloads), and then create an Ubuntu virtual machine. See Practical Computing for Biologists page 458 for instructions on how to do this, as well as the shared folder instructions at the [book website](http://practicalcomputing.org/ubuntu). This will allow you to run Linux from within windows.
+- [Docker](https://www.docker.com/get-started)
 
 ## Instructions
 
@@ -56,13 +57,13 @@ This syllabus focuses on the 3 classes to be taught by Casey. These classes are 
 
 The lectures are a bit out of sequence with the book to be sure you have the skills needed for the other course activities led by other instructors.
 
-### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line
+### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line, Regular Expressions
 > Reading: Haddock & Dunn "Before You Begin", Chapters 1, 4-5, Appendix 1, 3
 
-### Application Practical (Tuesday May 31 16.00-18.00) - Regular Expressions
+
 > Reading: Haddock & Dunn Chapters 2-3, Appendix 2
 
-### Class 2 (Wednesday 5 June): Version Control, Command Line (continued)
+### Class 2 (Wednesday 5 June): Version Control, Text Wrangling, Command Line (continued)
 > Reading: Haddock & Dunn Chapters 6, 20, Haddock & Dunn new git chapter (to be distributed at the course)
 
 ### Class 3 (Thursday 6 June): Intro to R
