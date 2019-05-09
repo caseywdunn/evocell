@@ -60,16 +60,41 @@ The lectures are a bit out of sequence with the book to be sure you have the ski
 ### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line, Regular Expressions
 > Reading: Haddock & Dunn "Before You Begin", Chapters 1, 4-5, Appendix 1, 3
 
-
 > Reading: Haddock & Dunn Chapters 2-3, Appendix 2
+
+9:00 - 13:00
+
+14:00 - 15:30
+
+18:00 - 19:30 - Jaime Huerta-Cepas talk
+
 
 ### Class 2 (Wednesday 5 June): Version Control, Text Wrangling, Command Line (continued)
 > Reading: Haddock & Dunn Chapters 6, 20, Haddock & Dunn new git chapter (to be distributed at the course)
 
+9:00 - 13:00
+
+14:00 - 15:30
+
+18:00 - 19:30
+
 ### Class 3 (Thursday 6 June): Intro to R
 
+9:00 - 13:00 - Intro to R
+
+14:00 - 15:30 - Intro to Phylogenetic comparative methods
+
+18:00 - 19:30 - Andi Hejnol: Comparative methods in EvoDevo
 
 ### Class 4 (Friday 7 June): Phylogenetic Comparative Methods for Evolutionary Functional Genomics
+
+
+9:00 - 13:00 - Phylogenetic comparative analyses in R
+
+14:00 - 15:30 - Amy
+
+18:00 - 19:30 - Amy
+
 
 Amy will also give a 1-2 hour workshop on this day
 
