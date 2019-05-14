@@ -62,9 +62,9 @@ The lectures are a bit out of sequence with the book to be sure you have the ski
 
 > Reading: Haddock & Dunn Chapters 2-3, Appendix 2
 
-9:00 - 13:00
+9:00 - 13:00 - Setting up your computer, regular expressions
 
-14:00 - 15:30
+14:00 - 15:30 - The Unix command line
 
 18:00 - 19:30 - Jaime Huerta-Cepas talk
 
@@ -72,17 +72,17 @@ The lectures are a bit out of sequence with the book to be sure you have the ski
 ### Class 2 (Wednesday 5 June): Version Control, Text Wrangling, Command Line (continued)
 > Reading: Haddock & Dunn Chapters 6, 20, Haddock & Dunn new git chapter (to be distributed at the course)
 
-9:00 - 13:00
+9:00 - 13:00 - Version control with git
 
-14:00 - 15:30
+14:00 - 15:30 - Working with text
 
-18:00 - 19:30
+18:00 - 19:30 - Jennifer Rainsford
 
 ### Class 3 (Thursday 6 June): Intro to R
 
-9:00 - 13:00 - Intro to R
+9:00 - 13:00 - Intro to R and tidyverse
 
-14:00 - 15:30 - Intro to Phylogenetic comparative methods
+14:00 - 15:30 - Principles of data visualization
 
 18:00 - 19:30 - Andi Hejnol: Comparative methods in EvoDevo
 
@@ -91,7 +91,7 @@ The lectures are a bit out of sequence with the book to be sure you have the ski
 
 9:00 - 13:00 - Phylogenetic comparative analyses in R
 
-14:00 - 15:30 - Amy
+14:00 - 15:30 - Recap
 
 18:00 - 19:30 - Amy
 
