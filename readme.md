@@ -36,16 +36,16 @@ Please install the following tools on your laptop before you arrive. This will r
 
 - [RStudio](https://www.rstudio.com/products/rstudio/download/#download)
 
+- [Docker](https://www.docker.com/get-started)
 
 ### Apple macOS
 
-- OS X command line developer tools. To see if you have them installed, open /Applications/Utilities/Terminal and type `gcc` at the command line. If `gcc` runs, you are probably all set. If it asks you if you would like to install the Developer tools, follow the instructions to do so.
+- macOS command line developer tools. To see if you have them installed, open /Applications/Utilities/Terminal and type `gcc` at the command line. If `gcc` runs, you are probably all set. If it asks you if you would like to install the Developer tools, follow the instructions to do so. This will install `git`.
 
 ### Windows
 
 - [git](https://git-scm.com)
 
-- [Docker](https://www.docker.com/get-started)
 
 ## Instructions
 
@@ -53,14 +53,18 @@ Please install the following tools on your laptop before you arrive. This will r
 
 ## Schedule
 
-This syllabus focuses on the 3 classes to be taught by Casey. These classes are from XXX on each of the following days.
+This syllabus focuses on the classes to be taught by Casey.
 
-The lectures are a bit out of sequence with the book to be sure you have the skills needed for the other course activities led by other instructors.
+## Reading
+
+The course activities will walk through material covered in the following reading.
+
+- Haddock, SHD and CW Dunn (2011). Practical Computing for Biologists. [amazon](http://www.amazon.com/Practical-Computing-Biologists-Steven-Haddock/dp/0878933913/ref=sr_1_1) *I wrote this book with my colleague Steve Haddock as an introduction to general computing skills for biologists. If you are not already comfortable at the command line then you should get this book as a reference.*
+
+- Whickham, H (2017). R for Data Science. http://r4ds.had.co.nz *This book is free online at the provided link. It is an excellent introduction to data analysis in R, and more broadly how to think about data structure and analysis. It presents a coherent introduction to the Tidyverse, a set of R packages for general data manipulation and analysis. Our R coding will follow conventions in this book.*
+
 
 ### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line, Regular Expressions
-> Reading: Haddock & Dunn "Before You Begin", Chapters 1, 4-5, Appendix 1, 3
-
-> Reading: Haddock & Dunn Chapters 2-3, Appendix 2
 
 9:00 - 13:00 - Setting up your computer, regular expressions
 
@@ -70,7 +74,6 @@ The lectures are a bit out of sequence with the book to be sure you have the ski
 
 
 ### Class 2 (Wednesday 5 June): Version Control, Text Wrangling, Command Line (continued)
-> Reading: Haddock & Dunn Chapters 6, 20, Haddock & Dunn new git chapter (to be distributed at the course)
 
 9:00 - 13:00 - Version control with git
 
