@@ -89,7 +89,9 @@ The course activities will walk through material covered in the following readin
 
 9:00 - 13:00 - Intro to R and tidyverse (Jacob)
 
-14:00 - 15:30 - Principles of data visualization
+14:00 - 15:30 - Principles of data visualization (Jacob)
+
+16:00 - 18:00 - Intro to Phylogenetic Comparative methods (Andi)
 
 18:00 - 19:30 - Andi Hejnol: Comparative methods in EvoDevo
 
