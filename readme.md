@@ -4,7 +4,7 @@
 
 This syllabus covers material that Cat Munro, Jacob Musser, and Andi Hejnol will present at the 2019 EvoCELL workshop in place of [Casey Dunn](http://dunnlab.org).
 
-These days will include morning workshops on general computing skills based on the book [Practical Computing for Biologists](http://www.sinauer.com/practical-computing-for-biologists.html). These will be taught be [Casey Dunn](http://dunnlab.org). Morning workshops will be followed by afternoon workshops on specific applications of bioinformatics.
+These days will include morning workshops on general computing skills based on the book [Practical Computing for Biologists](http://www.sinauer.com/practical-computing-for-biologists.html). Morning workshops will be followed by afternoon workshops on specific applications of bioinformatics.
 
 A few general notes about the course structure:
 
