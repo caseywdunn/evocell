@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This syllabus covers material that [Casey Dunn](http://dunnlab.org) will present, with help from Cat Munro, at the 2019 EvoCELL workshop.
+This syllabus covers material that Cat Munro, Jacob Musser, and Andi Hejnol will present at the 2019 EvoCELL workshop in place of [Casey Dunn](http://dunnlab.org).
 
 These days will include morning workshops on general computing skills based on the book [Practical Computing for Biologists](http://www.sinauer.com/practical-computing-for-biologists.html). These will be taught be [Casey Dunn](http://dunnlab.org). Morning workshops will be followed by afternoon workshops on specific applications of bioinformatics.
 
@@ -59,16 +59,18 @@ This syllabus focuses on the classes to be taught by Casey.
 
 The course activities will walk through material covered in the following reading.
 
-- Haddock, SHD and CW Dunn (2011). Practical Computing for Biologists. [amazon](http://www.amazon.com/Practical-Computing-Biologists-Steven-Haddock/dp/0878933913/ref=sr_1_1) *I wrote this book with my colleague Steve Haddock as an introduction to general computing skills for biologists. If you are not already comfortable at the command line then you should get this book as a reference.*
+- Haddock, SHD and CW Dunn (2011). Practical Computing for Biologists. [amazon](http://www.amazon.com/Practical-Computing-Biologists-Steven-Haddock/dp/0878933913/ref=sr_1_1) *Casey wrote this book with my colleague Steve Haddock as an introduction to general computing skills for biologists. If you are not already comfortable at the command line then you should get this book as a reference.*
 
 - Whickham, H (2017). R for Data Science. http://r4ds.had.co.nz *This book is free online at the provided link. It is an excellent introduction to data analysis in R, and more broadly how to think about data structure and analysis. It presents a coherent introduction to the Tidyverse, a set of R packages for general data manipulation and analysis. Our R coding will follow conventions in this book.*
 
 
 ### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line, Regular Expressions
 
-9:00 - 13:00 - Setting up your computer, regular expressions
+9:00 - 13:00 -  Practical - Setting up your computer, regular expressions, introduction to the unix command line
 
-14:00 - 15:30 - The Unix command line
+14:00 - 18:00 - The Unix command line
+
+16:00 Coffee Break
 
 18:00 - 19:30 - Jaime Huerta-Cepas talk
 
@@ -79,11 +81,13 @@ The course activities will walk through material covered in the following readin
 
 14:00 - 15:30 - Working with text
 
-18:00 - 19:30 - Jennifer Rainsford
+16:00 - 17:00 - Integrating tools and designing workflows
+
+18:30 - 19:10 - Jennifer Rainsford
 
 ### Class 3 (Thursday 6 June): Intro to R
 
-9:00 - 13:00 - Intro to R and tidyverse
+9:00 - 13:00 - Intro to R and tidyverse (Jacob)
 
 14:00 - 15:30 - Principles of data visualization
 
@@ -92,12 +96,15 @@ The course activities will walk through material covered in the following readin
 ### Class 4 (Friday 7 June): Phylogenetic Comparative Methods for Evolutionary Functional Genomics
 
 
-9:00 - 13:00 - Phylogenetic comparative analyses in R
+9:00 - 13:00 - Phylogenetic comparative analyses in R (Andi)
 
-14:00 - 15:30 - Recap
+14:00 - 15:30 - Amy Maxmen, Career in Science Journalism
 
-18:00 - 19:30 - Amy
+16:00  Coffee break
 
+16:30 - 17:00 - Recap
+
+18:00 - 19:30 - Amy Podium 
 
 Amy will also give a 1-2 hour workshop on this day
 
