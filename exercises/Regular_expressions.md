@@ -1,7 +1,7 @@
 # Regular expressions
 
 ## Reading
->Chapters 2 and 3 of Haddock, SHD and CW Dunn (2011)[Practical Computing for Biologists](http://practicalcomputing.org/)
+>Chapters 2 and 3 of Haddock, SHD and CW Dunn (2011) [Practical Computing for Biologists](http://practicalcomputing.org/)
 
 ## Getting started
 We will be using regular expressions or **regex** to manipulate text files.
@@ -78,7 +78,7 @@ You can search for: `\w+ \w+ \(\w+\)` to select all of the text. Capture it with
 
 Special searches `\t`,`\s`,`\d` can be combined with `+`
 
-## Exercise
+## Exercise 1
 
 Go to [GenBank](https://www.ncbi.nlm.nih.gov/genbank/) and download a series of protein sequences for your favourite species and proteins (approx 4 or 5). Or use the file `FPexamples.fta` in the `pcfb`>`examples` folder.
 
@@ -95,6 +95,27 @@ Would become:
 >AER00326.1_Aequorea
 NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
 ```
+
+## Make your own wildcards
+
+Sometimes you need to make your own wildcards. You can do this using `[]`.
+
+For example, you only want to select the nucleotides A G C T, you could search for `[AGCT]`.
+
+- Uppercase letters can be selected using `[A-Z]`, or lowercase `[a-z]` (you need to select the option 'Case sensitive - Aa' in Atom). `[A-Za-z]` gives any letter
+- [0-9\.] matches any digit or decimal point
+
+If we open up the example file `LatLon.txt` in `pcfb`>`examples`, you will find latitude and longitude data. There are five locations, but the latitude and longitude for each location are found on separate lines.
+
+To put them on the same line, separated by a tab, you would use the wildcard `(\"[NS])` to select only lines that end with N or S. You also want to remove the end of line character `\n` (`\r` in some text editors). So if you search for `(\"[NS])\n` and replace it with `$1\t` where `\t` is a tab, you are able to put the latitudes and longitudes on the same line.
+
+Let's say we want to add `-` to WS lines and remove the compass point from NE lines.
+
+Search for `([0-9]+ [0-9 \'\.\"]+)[WS]` and replace with `-$1` . Exchange `WS` for `NE` and replace with `$1`.
+
+## Exercise 2
+
+
 
 ## Tips
 
