@@ -1,7 +1,7 @@
 # Regular expressions
 
 ## Reading
-Chapters 2 and 3 of 'Practical computing for biologists
+>Chapters 2 and 3 of Haddock, SHD and CW Dunn (2011)[Practical Computing for Biologists](http://practicalcomputing.org/)
 
 ## Getting started
 We will be using regular expressions or *regex* to manipulate text files.
