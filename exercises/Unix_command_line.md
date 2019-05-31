@@ -22,7 +22,7 @@ In your terminal, Command Prompt or PowerShell (Windows), run:
 
 You are now running ubuntu.
 
-You can exit your instance by typing `exit`
+You can exit your docker container by typing `exit`
 
 To see a list of all the running containers, type `docker ps`. If your container is closed, you can type `docker ps -a` to get a list of all containers.
 
