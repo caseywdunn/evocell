@@ -19,7 +19,9 @@ In an atom window, type:
 +40 46'N +014 15'E
 +21 17'N -157 52'W
 ```
-Use the wildcard `\w` to identify any letter (A-z) or digit (0-9) and remove the direction from the end of each coordinate (e.g N, E, W)
+The wildcard `\w` identifies any letter (A-z) or digit (0-9).
+
+You can type `'\w` to  and remove the direction from the end of each coordinate (e.g N, E, W)
 
 ### Capture
 
@@ -35,7 +37,7 @@ Type into a fresh atom window:
 ```
 You can search for each separate letter with `\w\w\w`. If you click replace, you will remove everything.
 
-To keep just the first number in this list, you can use `()` to capture it by searching for `(\w)\w\w` and using the replacement term `$1`. You could keep the first two using `(\w)(\w)\w` and replacing with `$1$2`, or even rearrange these by replacing with `$2$1`.
+To keep just the first number in this list, you can use `()` to capture it by searching for `(\w)\w\w` and using the replacement term `$1`. You could keep the first two characters using `(\w)(\w)\w` and replacing with `$1$2`, or even rearrange these by replacing with `$2$1`.
 
 You can also add text with your replacement term, e.g. `Position $1`
 
@@ -80,7 +82,7 @@ Special searches `\t`,`\s`,`\d` can be combined with `+`
 
 Go to [GenBank](https://www.ncbi.nlm.nih.gov/genbank/) and download a series of protein sequences for your favourite species and proteins (approx 4 or 5). Or use the file `FPexamples.fta` in the `pcfb`>`examples` folder.
 
-Modify the header so that the name begins with `>` followed by the Genbank id, the protein name, and the genus name, all separated by a `_`.
+Modify the header so that the name begins with `>` followed by the Genbank id and the genus name, all separated by a `_`.
 
 For example:
 ```
@@ -90,7 +92,7 @@ NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
 
 Would become:
 ```
->AER00326.1_GFP_Aequorea
+>AER00326.1_Aequorea
 NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
 ```
 
