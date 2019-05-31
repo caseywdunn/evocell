@@ -3,6 +3,8 @@
 ## Reading
 >Chapters 2 and 3 of Haddock, SHD and CW Dunn (2011) [Practical Computing for Biologists](http://practicalcomputing.org/)
 
+We will walk through these chapters below.
+
 ## Getting started
 We will be using regular expressions or **regex** to manipulate text files.
 
@@ -27,7 +29,7 @@ You can type `'\w` to  and remove the direction from the end of each coordinate 
 
 You can also use `()` to capture text.
 
-Type into a fresh atom window:
+Type into a fresh Atom window:
 
 ```
 5th
@@ -74,7 +76,7 @@ You can search for: `\w+ \w+ \(\w+\)` to select all of the text. Capture it with
 - `\s` searches for white space
 - `\n` (or `\r` depending on the program) searches for the end of the line
 - `\d` A digit from 0-9
-- `.*` (or just `.`) Any letter, number or symbol. Not end of line characters.
+- `.` Any letter, number or symbol. Not end of line characters.
 
 Special searches `\t`,`\s`,`\d` can be combined with `+`
 
@@ -96,7 +98,7 @@ Would become:
 NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
 ```
 
-## Make your own wildcards
+### Make your own wildcards
 
 Sometimes you need to make your own wildcards. You can do this using `[]`.
 
@@ -113,13 +115,36 @@ Let's say we want to add `-` to WS lines and remove the compass point from NE li
 
 Search for `([0-9]+ [0-9 \'\.\"]+)[WS]` and replace with `-$1` . Exchange `WS` for `NE` and replace with `$1`.
 
+### Defining characters you don't want; beginning & endings
+
+Sometimes it's easier to define characters you don't want. You can define any character you don't want using the caret `^` symbol. For example `[^\t]` means any character except a tab.
+
+The caret `^` has another meaning too. It indicates the beginning of a line. While `$` matches the end of the line, right ahead of `\n` or `\r`.
+
+### Greedy quantifiers & precision
+
+The wildcard `.*` can be very useful, as it matches everything in a query except `\r` or `\n`. You can combine `*` with any search term. For example:
+
+```
+CGCGATATGATGATGCGTAGCTGATCGCGCGCGATATGTTGGCCTGTAGAAAAAAAAAAAA
+```
+To remove the trailing A's, you could search for `(\w+[CGT]A*)`, and replace with `$1`. Or you can use `?` to determine a minimum match, e.g `(\w+?)A*$`
+
+Curly brackets `{}` can be used to manage the number of matches. For example, we may want to remove 12 A's, as above. We could specify `A{12}` to remove them. If we wanted to remove trailing A's that are at least 8 and no more than 12 we could specify `A{8,12}`.
+
 ## Exercise 2
 
+If you already have a large text file and you would like to standardize it using the tools you have just learned, go ahead! It could be a tab separated file with observation data, for example.
 
+Otherwise, open up `Ch3observations.txt` in `pcfb`>`examples`. Use the tools you have just learned to change the file into the following format:
+
+`Year Mon.  Day Hour  Minute  X data  Y data` All tab separated.
+
+Note that this file has a combination of spaces and tabs.
 
 ## Tips
 
-Some documents or pasted data may have non-ASCII unicode characters. This can cause problems when trying to run scripts or manipulate the data using python or R. You can search for any non-ASCII unicode character using `[^\x00-\x7F]`.
+Some documents or pasted data may have non-ASCII unicode characters. This can cause problems when trying to run scripts or manipulate the data using python or R. You can search for any non-ASCII unicode character using the custom wild card `[^\x00-\x7F]`.
 
 ## Resources
 
