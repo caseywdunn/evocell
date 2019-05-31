@@ -10,9 +10,9 @@ A few general notes about the course structure:
 
 - Many details of the course are specific to UNIX-like operating systems, which include Linux and Apple macOS.
 
-- We will also use UNIX for local command line, programing, and data processing exercises. This means that it will not be possible to use Microsoft Windows alone for most course activities. If your primary laptop is Microsoft Windows, there are a couple options. We suggest that you borrow a Mac laptop for the course. Alternatively, if you prefer you can install Linux on a Virtual Machine and run it from within Windows.
+- We will also use UNIX for local command line, programing, and data processing exercises. This means that it will not be possible to use Microsoft Windows alone for most course activities. If your primary laptop is Microsoft Windows, you can install Linux on a Virtual Machine and run it from within Windows. We will also be using [docker](https://www.docker.com/) containers to keep things consistent,
 
-- Course content, schedule, code, and other files will be distributed on [github](https://github.com). Course materials are available at [neptune2016](https://github.com/neptune2016).
+- Course content, schedule, code, and other files will be distributed on [github](https://github.com).
 
 
 ## To do before you arrive
@@ -49,26 +49,24 @@ Please install the following tools on your laptop before you arrive. This will r
 
 ## Instructions
 
-### Git
-
 ## Schedule
 
-This syllabus focuses on the classes to be taught by Casey.
+This syllabus focuses on the classes to be taught by Cat, Jake, and Andi.
 
 ## Reading
 
 The course activities will walk through material covered in the following reading.
 
-- Haddock, SHD and CW Dunn (2011). Practical Computing for Biologists. [amazon](http://www.amazon.com/Practical-Computing-Biologists-Steven-Haddock/dp/0878933913/ref=sr_1_1) *Casey wrote this book with my colleague Steve Haddock as an introduction to general computing skills for biologists. If you are not already comfortable at the command line then you should get this book as a reference.*
+- Haddock, SHD and CW Dunn (2011). Practical Computing for Biologists. [amazon](http://www.amazon.com/Practical-Computing-Biologists-Steven-Haddock/dp/0878933913/ref=sr_1_1) *Casey wrote this book with his colleague Steve Haddock as an introduction to general computing skills for biologists. If you are not already comfortable at the command line then you should get this book as a reference.*
 
 - Whickham, H (2017). R for Data Science. http://r4ds.had.co.nz *This book is free online at the provided link. It is an excellent introduction to data analysis in R, and more broadly how to think about data structure and analysis. It presents a coherent introduction to the Tidyverse, a set of R packages for general data manipulation and analysis. Our R coding will follow conventions in this book.*
 
 
 ### Class 1 (Monday 3 June): Getting Set Up, The Unix Command Line, Regular Expressions
 
-9:00 - 13:00 -  Practical - Setting up your computer, regular expressions, introduction to the unix command line
+9:00 - 13:00 -  Practical - Setting up your computer, regular expressions, introduction to the unix command line (Cat)
 
-14:00 - 18:00 - The Unix command line
+14:00 - 18:00 - The Unix command line (Cat)
 
 16:00 Coffee Break
 
@@ -77,11 +75,11 @@ The course activities will walk through material covered in the following readin
 
 ### Class 2 (Wednesday 5 June): Version Control, Text Wrangling, Command Line (continued)
 
-9:00 - 13:00 - Version control with git
+9:00 - 13:00 - Version control with git (Cat)
 
-14:00 - 15:30 - Working with text
+14:00 - 15:30 - Working with text (Cat)
 
-16:00 - 17:00 - Integrating tools and designing workflows
+16:00 - 17:00 - Integrating tools and designing workflows (Cat)
 
 18:30 - 19:10 - Jennifer Rainsford
 
@@ -98,7 +96,7 @@ The course activities will walk through material covered in the following readin
 ### Class 4 (Friday 7 June): Phylogenetic Comparative Methods for Evolutionary Functional Genomics
 
 
-9:00 - 13:00 - Phylogenetic comparative analyses in R (Andi)
+9:00 - 13:00 - Phylogenetic comparative analyses in R (Cat)
 
 14:00 - 15:30 - Amy Maxmen, Career in Science Journalism
 
@@ -107,8 +105,6 @@ The course activities will walk through material covered in the following readin
 16:30 - 17:00 - Recap
 
 18:00 - 19:30 - Amy Podium 
-
-Amy will also give a 1-2 hour workshop on this day
 
 
 ## Reading
