@@ -14,7 +14,7 @@ We will be using regular expressions or **regex** to manipulate text files.
 
 ## Introduction
 
-For regex find and replace, we will be using wildcards in Atom to manipulate text data. Use cmd f to search. Make sure that the Regex option is selected `option cmd /` or click the regex button `.*` that can be found just above 'Find All'.
+For regex find and replace, we will be using wildcards in Atom to manipulate text data. Use `cmd f` to search. Make sure that the Regex option is selected `option cmd /` or click the regex button `.*` that can be found just above 'Find All'.
 
 In an atom window, type:
 ```
