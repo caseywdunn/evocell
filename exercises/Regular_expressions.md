@@ -103,7 +103,7 @@ Sometimes you need to make your own wildcards. You can do this using `[]`.
 For example, you only want to select the nucleotides A G C T, you could search for `[AGCT]`.
 
 - Uppercase letters can be selected using `[A-Z]`, or lowercase `[a-z]` (you need to select the option 'Case sensitive - Aa' in Atom). `[A-Za-z]` gives any letter
-- [0-9\.] matches any digit or decimal point
+- [0-9 \.] matches any digit or decimal point
 
 If we open up the example file `LatLon.txt` in `pcfb`>`examples`, you will find latitude and longitude data. There are five locations, but the latitude and longitude for each location are found on separate lines.
 
