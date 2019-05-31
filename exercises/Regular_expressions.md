@@ -21,6 +21,8 @@ In an atom window, type:
 ```
 Use the wildcard `\w` to identify any letter (A-z) or digit (0-9) and remove the direction from the end of each coordinate (e.g N, E, W)
 
+### Capture
+
 You can also use `()` to capture text.
 
 Type into a fresh atom window:
@@ -35,9 +37,62 @@ You can search for each separate letter with `\w\w\w`. If you click replace, you
 
 To keep just the first number in this list, you can use `()` to capture it by searching for `(\w)\w\w` and using the replacement term `$1`. You could keep the first two using `(\w)(\w)\w` and replacing with `$1$2`, or even rearrange these by replacing with `$2$1`.
 
+You can also add text with your replacement term, e.g. `Position $1`
 
+### Quantifiers
+
+You can adjust how many characters you select by adding a quantifier. Plus (+) enables you to change different types of characters at once, for example `\w+` would match a term one or more times in succession.
+
+Type into a fresh Atom window:
+```
+Agalma elegans
+Frillagalma vityazi
+Cordagalma tottoni
+Mus musculus
+```
+`\w+` will select all of the characters in the document.
+
+To keep only the first letter of the genus and the species name, you can put `(\w)\w+ (\w+)` in the search term and `$1. $2`in the replacement term
+
+### Escaping
+
+If you want to search for `\` , `+`, or `()` specifically, you have to modify how it is interpreted in the search. As you use punctuation, `+`, and `()` as special characters, you have to use `\` to remove the special meaning of this character when you search for it.
+
+Take for example:
+```
+Physalia physalis (Linnaeus)
+```
+You can use `\` in front of the character `(` to remove the special meaning of this character. This is called 'Escaping'.
+
+You can search for: `\w+ \w+ \(\w+\)` to select all of the text. Capture it with `(\w+) (\w+) \((\w+)\)` and replace with, for example, `$1_$2_$3`
+
+### Other special search terms
+
+- `\t` searches for tabs, which is especially useful for text files that are tab separated (tsv)
+- `\s` searches for white space
+- `\n` (or `\r` depending on the program) searches for the end of the line
+- `\d` A digit from 0-9
+- `.*` (or just `.`) Any letter, number or symbol. Not end of line characters.
+
+Special searches `\t`,`\s`,`\d` can be combined with `+`
 
 ## Exercise
+
+Go to [GenBank](https://www.ncbi.nlm.nih.gov/genbank/) and download a series of protein sequences for your favourite species and proteins (approx 4 or 5). Or use the file `FPexamples.fta` in the `pcfb`>`examples` folder.
+
+Modify the header so that the name begins with `>` followed by the Genbank id, the protein name, and the genus name, all separated by a `_`.
+
+For example:
+```
+>AER00326.1 GFP, partial [Aequorea victoria]
+NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
+```
+
+Would become:
+```
+>AER00326.1_GFP_Aequorea
+NGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLS
+```
 
 ## Tips
 
