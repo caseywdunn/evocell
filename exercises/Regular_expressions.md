@@ -1,9 +1,9 @@
-## Regular expressions
+# Regular expressions
 
-###Reading
+##Reading
 Chapters 2 and 3 of 'Practical computing for biologists
 
-###Getting started
+##Getting started
 We will be using regular expressions or *regex* to manipulate text files.
 
 - Download [Atom](https://atom.io) if you haven't already.
