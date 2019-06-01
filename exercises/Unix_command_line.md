@@ -104,19 +104,13 @@ One of the pipes I use a lot is `ls -1 | wc -l`. This gives a list (`ls`) with `
 
 ## Exercise 1
 
-Use `grep` and pipes to pull out all entries in `examples/shaver_etal.csv` that are from August AND contain "Toolik", and output this to a new file.
-
-Note: using `grep -e` or wildcards you can pull out lines that contain "Toolik" OR "August", but this is different.
-
-## Exercise 2
-
 Use pipes and grep to count how many times the EcoRI cut site "GAATTC" appears in the `*.seq` files in `pcfb/examples`. (There are a few ways to do this)
 
 ### Downloading files in the command line
 
 You can download files from the web using `wget`. Try for example, `wget "http://files.rcsb.org/view/1ema.pdb"`
 
-### Tips
+## Tips
 
 Up arrow - moves through your command history
 
