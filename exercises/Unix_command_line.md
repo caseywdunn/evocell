@@ -66,7 +66,6 @@ You can also use wildcards in the terminal, especially `*`.
 
 For example `ls C*` gives you all the files in the directory that start with C.
 
-
 ### Viewing file contents
 
 This docker container does not have file viewers installed. You can view the top portion of your file with `head`, e.g `head reflist.txt` or the bottom portion of your file with `tail`.
@@ -77,7 +76,45 @@ We will install a file viewer:
 `apt-get update`
 `apt-get install -y nano`
 
-To open an existing file type `nano reflist.txt`. 
+To open an existing file type `nano reflist.txt`.
+
+### Redirecting & joining files
+
+- You can redirect the output of a command to a file rather than the screen using `>`
+
+In the folder `pcfb`, make a new folder `sandbox`. In here, try `ls -l ../examples/*.seq > files.txt`
+
+- You can use `cat` to combine files. Try `cat ../examples/FEC00002_1.seq ../examples/FEC00001_1.seq` or `cat ../examples/*.seq`.
+
+Try redirecting the output to a new file.
+
+### Grep in the command line
+
+You can use regex in the command line too!
+
+Try `grep "Toolik Lake" ../examples/shaver_etal.csv > toolik1.csv`
+
+Check `grep --help` to see other additional arguments. `grep -v` for example, gives the inverse, while `grep -i` instructs grep to ignore the case of letters in your search.
+
+### Piping output
+
+You can redirect the output from one program to another. Try piping `history | grep Toolik`, where `history` shows a history of past commands.
+
+One of the pipes I use a lot is `ls -1 | wc -l`. This gives a list (`ls`) with `-1` entry per line; piped into the count `wc` of `-l` lines.
+
+## Exercise 1
+
+Use `grep` and pipes to pull out all entries in `examples/shaver_etal.csv` that are from August AND contain "Toolik", and output this to a new file.
+
+Note: using `grep -e` or wildcards you can pull out lines that contain "Toolik" OR "August", but this is different.
+
+## Exercise 2
+
+Use pipes and grep to count how many times the EcoRI cut site "GAATTC" appears in the `*.seq` files in `pcfb/examples`. (There are a few ways to do this)
+
+### Downloading files in the command line
+
+You can download files from the web using `wget`. Try for example, `wget "http://files.rcsb.org/view/1ema.pdb"`
 
 ### Tips
 
