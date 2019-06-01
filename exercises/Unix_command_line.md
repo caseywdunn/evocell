@@ -60,7 +60,26 @@ You have to specify a new file name if you are copying into the same directory. 
 
 Type `ls --help` to get a list of optional arguments to modify your command. `ls -a` gives you a list of all your files in a directory.
 
-### Shortcuts
+### Using wildcards
+
+You can also use wildcards in the terminal, especially `*`.
+
+For example `ls C*` gives you all the files in the directory that start with C.
+
+
+### Viewing file contents
+
+This docker container does not have file viewers installed. You can view the top portion of your file with `head`, e.g `head reflist.txt` or the bottom portion of your file with `tail`.
+
+There are a number of file viewers likely available on your clusters/servers or personal computers. Some common ones are `vim`, `vi`, and `nano`.
+
+We will install a file viewer:
+`apt-get update`
+`apt-get install -y nano`
+
+To open an existing file type `nano reflist.txt`. 
+
+### Tips
 
 Up arrow - moves through your command history
 
