@@ -40,7 +40,7 @@ Please install the following tools on your laptop before you arrive. This will r
 
 ### Apple macOS
 
-- macOS command line developer tools. To see if you have them installed, open /Applications/Utilities/Terminal and type `gcc` at the command line. If `gcc` runs, you are probably all set. If it asks you if you would like to install the Developer tools, follow the instructions to do so. This will install `git`.
+- macOS command line developer tools. To see if you have them installed, open /Applications/Utilities/Terminal and type `git --version` at the command line. If `git --version` runs, you are probably all set. If it asks you if you would like to install the Developer tools, follow the instructions to do so. This will install `git`.
 
 ### Windows
 
