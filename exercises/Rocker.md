@@ -26,5 +26,3 @@ Why would you do this?
 - enables you to combine docker with Amazon web services (https://docs.aws.amazon.com/AmazonECS/latest/developerguide/docker-basics.html)
 
 You can find many already built docker images on https://hub.docker.com/
-
-## Build your own
