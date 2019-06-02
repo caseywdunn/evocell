@@ -68,7 +68,7 @@ The course activities will walk through material covered in the following readin
 
 11:00 Coffee Break
 
-14:00 - 18:00 - The Unix command line (Cat)
+14:00 - 16:00 - The Unix command line (Cat)
 
 16:00 Coffee Break
 
@@ -79,7 +79,11 @@ The course activities will walk through material covered in the following readin
 
 9:00 - 13:00 - Version control with git (Cat)
 
+11:00 Coffee Break
+
 14:00 - 15:30 - Working with text (Cat)
+
+15:30 Coffee break
 
 16:00 - 17:00 - Integrating tools and designing workflows (Cat)
 
@@ -89,9 +93,13 @@ The course activities will walk through material covered in the following readin
 
 9:00 - 13:00 - Intro to R and tidyverse (Jacob)
 
-14:00 - 15:30 - Principles of data visualization (Jacob)
+11:00 Coffee break
 
-16:00 - 18:00 - Intro to Phylogenetic Comparative methods (Andi)
+14:00 - 15:00 - Principles of data visualization (Jacob)
+
+15:00 - 18:00 - Intro to Phylogenetic Comparative methods (Andi)
+
+16:00 Coffee break
 
 18:00 - 19:30 - Andi Hejnol: Comparative methods in EvoDevo
 
@@ -99,6 +107,8 @@ The course activities will walk through material covered in the following readin
 
 
 9:00 - 13:00 - Phylogenetic comparative analyses in R (Cat)
+
+11:00 Coffee Break
 
 14:00 - 15:30 - Amy Maxmen, Career in Science Journalism
 
