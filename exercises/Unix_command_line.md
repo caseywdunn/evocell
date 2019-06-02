@@ -28,6 +28,8 @@ To see a list of all the running containers, type `docker ps`. If your container
 
 You may need to run `docker restart [container id]` to restart the container.
 
+Once you have restarted it, you need to run `docker exec -it [container id] bash` to access your running container.
+
 To transfer files to/from a Docker container, use `docker cp`:
 
 e.g `docker cp Manuscript_prep.RData [container_id]:/Manuscript_prep.RData`
