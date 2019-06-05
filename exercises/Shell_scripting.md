@@ -49,7 +49,7 @@ Go to scripts and make a new text file with `nano firstscript.sh`
 
 Type:
 ```
-#! bin/bash
+#! /bin/bash
 
 ls -la
 echo "above is what's in this folder"
@@ -85,4 +85,4 @@ Each line should have the format
 
 Now turn this file into a script. Create a new script in docker using `nano copier.sh` (it is somewhat complicated to move files in and out of docker, so for this example we will just create a new script).
 
-Now run your script. 
+Now run your script.
