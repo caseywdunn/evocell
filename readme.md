@@ -108,6 +108,8 @@ The course activities will walk through material covered in the following readin
 
 9:00 - 13:00 - Phylogenetic comparative analyses in R (Cat)
 
+https://github.com/Phylogenetics-Brown-BIOL1425/independent_contrasts
+
 11:00 Coffee Break
 
 14:00 - 15:30 - Amy Maxmen, Career in Science Journalism
