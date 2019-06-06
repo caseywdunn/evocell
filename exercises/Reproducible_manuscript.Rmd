@@ -14,7 +14,7 @@ library (ape)
 library (knitr)
 ```
 
-#Reproducible manuscript in R {-}
+# Reproducible manuscript in R {-}
 
 This is an example of a fully executable, reproducible manuscript in R. Adapted from https://github.com/yihui/knitr-examples/blob/master/001-minimal.Rmd .
 
