@@ -112,7 +112,7 @@ https://github.com/Phylogenetics-Brown-BIOL1425/independent_contrasts
 
 11:00 Coffee Break
 
-14:00 - 15:30 - Amy Maxmen, Career in Science Journalism
+14:00 - 15:30 - Amy, Career in Science Journalism
 
 16:00  Coffee break
 
