@@ -1,0 +1,2503 @@
+---
+title: "Visual Exploration and Handling of Biological Data"
+author: "Jonathan Landry"
+date: "`r doc_date()`"
+bibliography: graphics_and_data_handling.bib
+output: 
+    BiocStyle::html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        code_folding: show
+    BiocStyle::pdf_document:
+        toc: true
+        highlight: tango
+---
+
+
+<!--
+To compile this document
+graphics.off();rm(list=ls());rmarkdown::render('graphics_and_data_handling.Rmd');purl('graphics_and_data_handling.Rmd')
+pdf document
+rmarkdown::render('graphics_and_data_handling.Rmd', BiocStyle::pdf_document2())
+
+
+-->
+
+```{r options, include=FALSE}
+library(knitr)
+options(digits = 3, width = 80)
+opts_chunk$set(echo = TRUE,tidy = FALSE,include = TRUE,
+               dev = 'png', fig.width = 4.5, fig.height = 3, comment = '  ', dpi = 300,
+cache = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+
+# Required packages and other preparations
+
+```{r required_packages_and_data, echo = TRUE, message=FALSE, cache=FALSE}
+library("BiocStyle")
+library("Biobase")
+library("rmarkdown")
+library("tidyverse")
+library("openxlsx")
+library("psych")
+library("stringr")
+library("xkcd")
+library("showtext")
+library("sysfonts")
+library("Hiiragi2013")
+library("knitr")
+library("RColorBrewer")
+library("stringr")
+library("pheatmap")
+library("matrixStats")
+library("cowplot")
+library("beeswarm")
+library("ggbeeswarm")
+library("mouse4302.db")
+library("Hmisc")
+library("gridExtra")
+library("plotly")
+library("extrafont")
+library("sysfonts")
+library("showtext")
+library("ggthemes")
+library("magrittr")
+library("readr")
+library("purrr")
+library("factoextra")
+
+
+
+fD <- function(x){
+    
+    tmp <- mean(x, na.rm = T)
+    data.frame(ymax = tmp, y = tmp, ymin = tmp)
+}
+
+fBar <- function(x){
+    
+    tmp <- mean(x, na.rm = T)
+    data.frame(ymax = tmp, y = tmp, ymin = tmp)
+}
+
+fCI <- function(x){
+    
+    m <- mean(x, na.rm = T)
+    std <- sqrt(var(x, na.rm = TRUE))
+    se <-  std/length(na.exclude(x))
+    ci <- qt(0.975, max(length(na.exclude(x)) - 1, 1) ) * se
+    
+    data.frame(ymax = m + ci, y = m, ymin = m - ci)
+}
+
+
+fSD <- function(x){
+    
+    m <- mean(x, na.rm = T)
+    std <- sqrt(var(x, na.rm = TRUE))
+    
+    
+    data.frame(ymax = m + qnorm(0.975)*std, 
+               y = m, 
+               ymin = m + qnorm(0.025)*std)
+}
+
+fIQR <- function(x){
+    
+    m <- mean(x, na.rm = T)
+    #m <- median(x, na.rm = T)
+    qU <- quantile(x, 3/4)
+    qL <- quantile(x, 1/4)
+    
+    data.frame(ymax = qU, 
+               y = m, 
+               ymin = qL)
+}
+
+
+fBarC <- function(x){
+    m <- mean(x, na.rm = T)
+    count <- m
+}
+   
+colPalette <- c("WT" = "#1B9E77", 
+            "A_MT_1" = "#D95F02",
+            "A_MT_2" =  "#7570B3",
+            "A_MT_3" = "#7570B3",
+            "MT_1" = "#66A61E",
+            "MT_2" = "#E6AB02",
+            "MT_3" = "#A6761D")
+
+beeCoordinates <- function(x){
+    x <- as.numeric(x)
+    res <- beeswarm(data.frame(x = x), do.plot = T)$x
+}
+
+```
+
+This Tutorial is adaptated from materials created by Bernd Klaus and Wolfgang Huber.
+
+# Graphics in R
+
+There are (at least) two types of data visualization. The first enables a scientist to effectively
+explore data and make discoveries about the complex processes at work. The other type of
+visualization provides informative, clear and visually attractive illustrations of her
+results that she can show to others and eventually include in a publication.
+
+Both of these types of visualizations can be made with R. In fact, R offers multiple
+graphics systems. This is because R is extensible, and because progress in R graphics has
+proceeded largely not by replacing the old functions, but by adding packages.  Each of the
+different graphics systems has its advantages and limitations. In the following we'll use
+two of them. First, we have a cursory look at the base R plotting functions (They
+  live in the `r CRANpkg("graphics")` package, which ships with every basic R installation.)
+Subsequently we will switch to `r CRANpkg("ggplot2")`.
+
+
+Base R graphics were historically first: simple, procedural, canvas-oriented. There are
+specialized functions for different types of plots. These are easy to call -- but when you
+want to combine them to build up more complex plots, or exchange one for another, this
+quickly gets messy to program, or even impossible. The user plots directly onto a
+(conceptual) canvas. She explicitly needs to deal with decisions such as how many
+inches to allocate to margins, axes labels, titles, legends, subpanels; once something
+is "plotted" it cannot be easily moved or erased.
+
+There is a more high-level approach: in the _grammar of graphics_, graphics are built
+up from modular logical pieces, so that we can easily try different visualization types for our
+data in an intuitive and easily deciphered way, like we can switch in and out parts of a
+sentence in human language.  There is no concept of a canvas or a plotter, rather, the
+user gives `r CRANpkg("ggplot2")` a high-level description of the plot she wants, in the form
+of an R object, and the rendering engine takes a holistic view on the scene to
+lay out the graphics and render them on the output device.
+
+We'll explore _faceting_, for showing more than 2 variables at a time. Sometimes this is
+also called lattice. The first major R package to implement this was
+  `r CRANpkg("lattice")`; nowadays much of such functionality is also provided through
+  `r CRANpkg("ggplot2")` graphics, and it allows us to visualize data in up to four or five
+dimensions.
+
+
+
+# Base R plotting
+
+
+The most basic function is `plot`. In the code below. It is used to plot data from an
+enzyme--linked immunosorbent assay (ELISA) assay. The assay was used to quantify the
+activity of the enzyme deoxyribonuclease (DNase), which degrades DNA. The data are
+assembled in the R object `DNase`, which conveniently comes with base R.
+`DNase` is a dataframe whose columns are `Run`, the assay run;
+`conc`, the protein concentration that was used; and `density`, the
+measured optical density.
+
+```{r basicplotting1}
+head(DNase)
+plot(DNase$conc, DNase$density)
+```
+
+This basic plot can be customized, for example by changing the plot symbol and axis labels
+using the parameters `xlab`, `ylab` and `pch` (plot character). Information about the variables is
+stored in the object `DNase`, and we can access it with the `attr`
+function.
+
+```{r basicplotting2}
+plot(DNase$conc, DNase$density,
+  ylab = attr(DNase, "labels")$y,
+  xlab = paste(attr(DNase, "labels")$x, attr(DNase, "units")$x),
+  pch = 3,
+  col = "blue")
+```
+
+  
+Besides scatterplots, we can also use built-in functions to create
+histograms and boxplots.
+
+```{r basicplotting3, fig.width=6.5, fig.height=3}
+hist(DNase$density, breaks = 25, main = "")
+```
+
+```{r basicplotting4, fig.width=5.6, fig.height=3.5}
+boxplot(density ~ Run, data = DNase)
+```
+
+Boxplots are convenient for showing multiple distributions next to each other in a compact
+space, and they are universally preferable to the barplots with error bars sometimes still
+seen in biological papers.  We will see more about plotting multiple univariate
+distributions later.
+
+The base R plotting functions are great for quick interactive exploration of data; but we
+run soon into their limitations if we want to create more sophisticated displays.  We
+are going to use a visualization framework called the grammar of graphics, implemented in
+the package `r CRANpkg("ggplot2")`, that enables step by step construction of high quality
+graphics in a logical and elegant manner. First let us introduce and load an example
+dataset.
+
+
+# An example dataset for using ggplot2
+
+<img src="Yusukecells-2.jpg" width="35%" height="35%" />
+
+<!--
+![](./image/image1.png =1000x200)
+
+Single-section immunofluorescence image of the E3.5 mouse blastocyst stained for Serpinh1,
+a marker of primitive endoderm (blue), Gata6 (red) and Nanog (green).
+-->
+
+To properly testdrive the `r CRANpkg("ggplot2")` functionality, we are going to need a dataset
+that is big enough and has some complexity so that it can be sliced and viewed from many
+different angles.  We'll use a gene expression microarray dataset that reports the
+transcriptomes of around 100 individual cells from mouse embryos at different time points
+in early development.  The mammalian embryo starts out as a single cell, the fertilized
+egg.  Through synchronized waves of cell divisions, the egg multiplies into a clump of
+cells that at first show no discernible differences between them. At some point, though,
+cells choose different lineages.  By further and further specification, the different cell
+types and tissues arise that are needed for a full organism. The aim of the experiment,
+explained by @Ohnishi_2013, was to investigate the gene expression changes
+associated with the first symmetry breaking event in the embryo.  We'll further explain
+the data as we go. More details can be found in the paper and in the documentation of the
+Bioconductor data package [@Ohnishi_2013] (The Figure above shows a 
+single--section immunofluorescence image of the E3.5 mouse blastocyst stained for Serpinh1,
+a marker of primitive endoderm (blue), Gata6 (red) and Nanog (green)).
+
+We first load the package and the
+data:
+
+```{r loadHiiragi}
+library("Hiiragi2013")
+data("x")
+dim(exprs(x))
+```
+```{r checkHiiragi, echo=FALSE}
+stopifnot(packageDescription("Hiiragi2013")$Version >=  package_version("1.3.2"), 
+          "sampleGroup" %in% colnames(pData(x)))
+stopifnot(is(x, "ExpressionSet"))          
+```
+
+You can print out a more detailed summary of the `ExpressionSet` object `x`
+by just typing `x` at the R prompt.  The `r ncol(x)` columns of the data matrix
+(accessed above through the `exprs` function) correspond to the samples (and
+each of these to a single cell), the `r nrow(x)` rows correspond to the genes probed by
+the array, an Affymetrix `r annotation(x)` array.  The data were normalized using the RMA
+method.  The raw data are also available in the package (in
+the data object `a`) and at EMBL-EBI's ArrayExpress database under the accession
+code E-MTAB-1681.
+
+Let's have a look at what information is available about the samples.
+
+```{r xpData}
+head(pData(x), n = 2)
+```
+
+The information provided is a mix of information about the cells (i.e., age, size and
+genotype of the embryo from which they were obtained) and technical information (scan
+date, raw data file name). By convention, time in the development of the mouse embryo
+is measured in days, and reported as, for instance, _E3.5_.
+Moreover, in the paper the authors divided the cells into
+`r length(unique(x$sampleGroup))`
+biological groups (`sampleGroup`), based on age,
+genotype and lineage, and they defined a color scheme to represent these groups.
+(`sampleColour`; This identifier in the dataset uses the British spelling.
+  Everywhere else in this chapter, we use the US spelling (color). 
+  The `r CRANpkg("ggplot2")` package 
+  generally accepts both spellings.)
+Using the `group_by` and `summarize` functions from the package `r CRANpkg("dplyr")`,
+we'll define a little dataframe `groups` that contains
+summary information for each group: the number of cells and the preferred color.
+(more on `r CRANpkg("dplyr")` later)
+
+```{r groupSize}
+groups <- group_by(pData(x), sampleGroup) %>%
+  dplyr::summarize(n = n() , color = unique(sampleColour))
+groups
+```
+
+The cells in the groups whose name contains
+`FGF4-KO` are from embryos in which the FGF4 gene, an important
+regulator of cell differentiation, was knocked out.  Starting from E3.5, 
+the wildtype cells (without
+the FGF4 knock-out) undergo the first symmetry breaking event and differentiate 
+into different cell lineages, called pluripotent epiblast (EPI) and primitive 
+endoderm (PE).
+
+
+# ggplot2
+
+`r CRANpkg("ggplot2")` is a package by Hadley Wickham  that implements the idea of 
+*grammar of graphics* -- a concept created by Leland Wilkinson in his book of the same name. Comprehensive documentation for the package can
+be found on <http://docs.ggplot2.org>.  The online documentation includes
+example use cases for each of the graphic types that are introduced in this lab (and
+many more) and is an invaluable resource when creating figures.
+
+Let's start by loading the package and redoing a simple plot.
+
+```{r figredobasicplottingwithggplot, fig.width = 6, fig.height = 3}
+ggplot(DNase, aes(x = conc, y = density)) + geom_point()
+```
+
+We just wrote our first "sentence" using the grammar of graphics. Let us deconstruct this sentence.
+First, we specified the dataframe that contains the data, `DNase`.
+Then we told `ggplot` via the `aes` (This stands for `aesthetic`, a terminology
+that will become clearer below.) argument which variables we want on the \(x\)-- 
+and \(y\)--axes, respectively.
+Finally, we stated that we want the plot to use points, by adding the result 
+of calling the function
+`geom_point`.
+
+Now let's turn to the mouse single cell data and plot the number of samples for each of the
+`r nrow(groups)` groups using the `ggplot` function.
+
+```{r figqplot1, fig.width=8, fig.height=4}
+ggplot(data = groups, aes(x = sampleGroup, y = n)) +
+  geom_bar(stat = "identity")
+```
+
+
+With `geom_bar` we now told `ggplot` that we want each data item
+(each row of `groups`) to be represented by a bar.  Bars are one geometric object
+ that `ggplot` knows about. We've already seen another geom in a previous 
+figure: points.  We'll encounter many
+other possible geometric objects later.  We used the `aes` to indicate that we
+want the groups shown along the \(x\)-axis and the sizes along the \(y\)-axis.  Finally, we
+provided the argument `stat = "identity"` (in other words, do nothing) to the
+`geom_bar` function, since otherwise it would try to compute a histogram of the
+data (the default value of `stat` is "count"). `stat` is short
+for *statistic*, which is what we call any function of data. Besides the identity and
+count statistic, there are others, such as smoothing, averaging, binning, or other
+operations that reduce the data in some way.
+
+```{r checkgeombar, echo = FALSE}
+## check an assertion made in the text above
+stopifnot(formals(ggplot2::geom_bar)$stat == "count")
+```
+
+These concepts ---data, geometrical objects, statistics--- are some of the ingredients of
+the grammar of graphics, just as nouns, verbs and adverbs are ingredients of an English
+sentence.
+
+__Exercise__
+
+* Use the internet to find out how to produce a horizontal barplot.
+
+
+The plot it produced is not bad, but there are several
+potential improvements. We can use color for the bars to help us quickly
+see which bar corresponds to which group. This is particularly useful if we use the
+same color scheme in several plots. To this end, let's define a named vector
+`groupColor` that contains our desired colors for each possible value of
+`sampleGroup`. (The information is completely equivalent to that in the
+`sampleGroup` and `color` columns of the dataframe `groups`,
+we're just adapting to the fact that `r CRANpkg("ggplot2")` expects this information in the
+form of a named vector.
+
+```{r groupColor}
+groupColor <- setNames(groups$color, groups$sampleGroup)
+```
+
+Another thing that we need to fix is the
+readability of the bar labels. Right now they are running into each other --- a common
+problem when you have descriptive names.
+
+```{r figqplot2, fig.width=5, fig.height=4}
+ggplot(groups, aes(x = sampleGroup, y = n, fill = sampleGroup)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = groupColor, name = "Groups") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+This is now already a longer and more complex sentence. Let us dissect it. 
+We added an argument, `fill` to the `aes` function that
+states that we want the bars to be colored (filled) based on `sampleGroup`
+(which in this case co-incidentally is also the value of the `x` argument, but 
+that need not be so).
+
+Furthermore we added a call to the `scale_fill_manual` function, 
+which takes as its
+input a color map -- i.e., the mapping from the
+possible values of a variable to the associated colors -- as a named vector.
+We also gave this color map a title (note that in more complex plots, there 
+can be several different color maps involved).
+Had we omitted the call to `scale_fill_manual`, `r CRANpkg("ggplot2")` 
+would have used its choice of
+default colors. We also added a call to `theme` stating that we want the \(x\)-axis labels
+rotated by 90 degrees and right-aligned (`hjust`; the default would be to center).
+
+
+## Data flow
+
+`r CRANpkg("ggplot2")` expects your data in a dataframe (This includes the base R
+`data.frame` as well as the `tibble` (and synonymous `data_frame`)
+classes from the `r CRANpkg("tibble")` package in the tidyverse.). 
+If they are in a matrix, in separate vectors, or other types of objects, 
+you will have to convert them. The packages `r CRANpkg("dplyr")` 
+and `r CRANpkg("broom")`, among others, offer facilities to this end.
+We'll discuss this more later, and you'll see examples of such 
+conversions sprinkled throughout the examples here.
+
+The result of a call to the `ggplot` is a `ggplot` object. Let's recall a
+piece of code from above:
+
+```{r ggplotobject}
+gg <- ggplot(DNase, aes(x = conc, y = density)) + geom_point() 
+```
+
+We have now assigned the output of `ggplot` to the object `gg`, instead
+of sending it directly to the console, where it was "printed" and produced
+the figure. The situation is completely
+analogously to what you are used to from working with the R console: when you enter an
+expression like `1+1` and hit "Enter'', the result is printed. When the
+expression is an assignment, such as `s = 1+1`, the side effect takes place (the
+name `s` is bound to an object in memory that represents the value of
+`1+1`), but nothing is printed. Similarly, when an expression is evaluated as part
+of a script called with `source`, it is not printed. Thus, the above code also
+does not create any graphic output, since no `print` method is invoked. To print
+the `gg`, type its name (in an interactive session) or call `print` on
+it:
+
+```{r ggpprintobject, results='hide', eval=FALSE}
+gg
+print(gg)
+```
+
+
+## Saving figures
+
+`r CRANpkg("ggplot2")` has a built-in plot saving function called
+`ggsave`:
+
+```{r plotsave1}
+ggsave("DNAse-histogram-demo.pdf", plot = gg)
+```
+```{r plotsave2, echo = FALSE, results = "hide"}
+file.remove("DNAse-histogram-demo.pdf")
+```
+
+There are two major ways of storing plots: vector graphics and raster (pixel) graphics. In
+vector graphics, the plot is stored as a series of geometrical primitives such as points,
+lines, curves, shapes and typographic characters. The preferred format in R for saving
+plots into a vector graphics format is PDF. In raster graphics, the plot is stored in a
+dot matrix data structure. The main limitation of raster formats is their limited
+resolution, which depends on the number of pixels available. In R, the most commonly used
+device for raster graphics output is `png`.  Generally, it's preferable to save
+your graphics in a vector graphics format, since it is always possible later to convert a
+vector graphics file into a raster format of any desired resolution, while the reverse is
+fundamentally limited by the resolution of the original file. And you don't want the
+figures in your talks or papers look poor because of pixelization artifacts!
+
+
+# The grammar of graphics
+
+The components of `r CRANpkg("ggplot2")` 's grammar of graphics are
+
+1. one or more datasets.
+
+2. one or more geometric objects that serve as the visual representations of the data
+  -- for instance, points, lines, rectangles, contours.
+
+3. descriptions of how the variables in the data are mapped to visual properties
+  (aesthetics) of the geometric objects, and an associated scale (e. g., linear,
+  logarithmic, rank).
+
+4. one or more coordinate systems.
+
+5. statistical summarization rules.
+
+6. a facet specification, i.e. the use of multiple similar subplots to look at 
+  subsets of the same data.
+
+7. optional parameters that affect the layout and rendering, such text size, font and
+  alignment, legend positions, and the like.
+
+
+In the examples above, the
+dataset was `groupsize`, the variables were the numeric values as well as the
+names of `groupsize`, which we mapped to the aesthetics \(y\)-axis and \(x\)-axis
+respectively, the scale was linear on the \(y\) and rank-based on the \(x\)-axis (the bars are
+ordered alphanumerically and each has the same width), the geometric object was the
+rectangular bar. 
+
+Items 4.--7. in the above list are optional. If you don't specify them, then the
+Cartesian is used as the coordinate system, the statistical summary is the trivial one
+(i.e., the identity), and no facets or subplots are made (we'll see examples later on). 
+The first three items are mandatory, you always need
+to specify at least one of them: they are the minimal components of a valid
+`r CRANpkg("ggplot2")` "sentence".
+
+
+In fact, `r CRANpkg("ggplot2")`'s implementation of the grammar of graphics allows you to use
+the same type of component multiple times, in what are called
+layers.  For example, the code below uses three types of
+geometric objects in the same plot, for the same data: points, a line and a confidence
+band.
+
+```{r loadlib, echo = FALSE, message = FALSE}
+library("mouse4302.db")
+```
+```{r findprobepairs, echo = FALSE, eval = FALSE}
+# I used this code to find the below two probes
+idx = order(rowVars(exprs(x)), decreasing=TRUE)[seq_len(2000)]
+cc  = cor(t(exprs(x)[idx,]))
+cco = order(cc)[seq(1, 1001, by=2) ]
+jj2 = rownames(exprs(x))[ idx[ (cco-1) / length(idx) + 1 ] ]
+jj1 = rownames(exprs(x))[ idx[ (cco-1)   length(idx) + 1 ] ]
+dftx = as.data.frame(t(exprs(x)))
+par(ask=TRUE)
+for(i in seq(along = cco)) {
+  df = AnnotationDbi::select(mouse4302.db,
+   keys = c(jj1[i], jj2[i]), keytype = "PROBEID",
+   columns = c("SYMBOL", "GENENAME"))
+  print(ggplot(dftx, aes( x = get(jj1[i]), y = get(jj2[i]))) +
+  geom_point(shape = 1) +
+  xlab(paste(jj1[i], df$SYMBOL[1])) +
+  ylab(paste(jj2[i], df$SYMBOL[2])) +
+  ggtitle(round(cc[jj1[i], jj2[i]], 3)) +
+  geom_smooth(method = "loess"))
+}
+```
+```{r figscp2layers1}
+# dftx = as_tibble(t(exprs(x))) %>% cbind(pData(x))
+dftx = data.frame(t(exprs(x)), pData(x))
+ggplot( dftx, aes( x = X1426642_at, y = X1418765_at)) +
+  geom_point( shape = 1 ) +
+  geom_smooth( method = "loess" ) +
+  coord_equal()
+```
+
+Here we had to assemble a copy of the expression data (`exprs(x)`) and the sample annotation
+data (`pData(x)`) all together into the dataframe `dftx` --
+since this is the data format that `r CRANpkg("ggplot2")` functions most easily take as input.
+
+```{r checkclassdftx, echo=FALSE}
+stopifnot(is(dftx, "data.frame"))
+```
+
+We can further enhance the plot by using colors --- since each of the points in the
+plot corresponds to one sample, it makes sense to use
+the `sampleColour` information in the object `x`.
+
+```{r figscp2layers2}
+ggplot( dftx, aes( x = X1426642_at, y = X1418765_at ))  +
+  geom_point( aes(color = sampleGroup), shape = 19 ) +
+  geom_smooth( method = "loess" ) +
+  scale_color_manual(values = groupColor ) +
+  xlab("Fn1") +
+  ylab("Timd2") +
+  coord_equal()
+```
+
+We can now see that the expression values of the gene
+`r AnnotationDbi::select(mouse4302.db, "1418765_at", keytype = "PROBEID", columns = "SYMBOL")$SYMBOL` 
+(whose mRNA is targeted by the probe 1418765\_at) are consistently high in the early time points,
+whereas its expression goes down in the EPI samples at days 3.5 and 4.5.
+In the FGF4-KO, this decrease is delayed - at E3.5, its expression is still high.
+Conversely, the gene
+`r AnnotationDbi::select(mouse4302.db, "1426642_at", keytype = "PROBEID", columns = "SYMBOL")$SYMBOL` 
+(1426642\_at) is off in the early timepoints and then goes up at days 3.5 and 4.5.
+The PE samples (green) show a high degree of cell-to-cell variability.
+
+The leading "X" that we
+used above when working with `dftx` was inserted during the creation of
+`dftx` by the constructor function `data.frame`, since its
+argument `check.names` is set to `TRUE` by default.
+
+Alternatively, we could have kept the original
+identifier notation by setting `check.names=FALSE`, but then we would need to
+work with the backticks, such as aes( x = \`1426642_at\`, ...), to make
+sure R understands the identifiers correctly.
+
+__Question__
+
+In the code above we defined the `color` aesthetics
+(`aes`) only for the `geom_point` layer, while we defined the `x`
+and `y` aesthetics for all layers. What happens if we set the `color`
+aesthetics for all layers, i.e., move it into the argument list of `ggplot`?
+What happens if we omit the call to `scale_color_discrete`?
+
+__Question__
+
+Is it always meaningful to visualize scatterplot data together with a regression
+line as in the Figures above?
+
+
+As a small side remark, if we want to find out which genes are targeted by these probe
+identifiers, and what they might do, we can call:
+
+```{r mouse4302.db, results="hide", message=FALSE}
+library("mouse4302.db")
+```
+```{r select}
+AnnotationDbi::select(mouse4302.db,
+   keys = c("1426642_at", "1418765_at"), keytype = "PROBEID",
+   columns = c("SYMBOL", "GENENAME"))
+```
+
+Often when using `ggplot` you will only need to specify the data, aesthetics and a
+geometric object. Most geometric objects implicitly call a suitable default statistical
+summary of the data.
+For example, if you are using `geom_smooth`, `r CRANpkg("ggplot2")`
+by default uses `stat = "smooth"` and then displays a line; if you use
+`geom_histogram`, the data are binned, and the result is displayed in barplot format.
+Here's an example a histogram of probe intensities for one particular sample, 
+cell number 20, which was from day E3.25.
+
+
+```{r fighists, fig.width = 3.5, fig.height = 2.5}
+dfx = as.data.frame(exprs(x))
+ggplot(dfx, aes(x = `20 E3.25`)) + geom_histogram(binwidth = 0.2)
+```
+
+Note the downward--sloping quotation marks around the identifiers.
+R understands these quotation marks to indicate variable names (or, here,
+column names in the dataframe `dftx`), and they are needed since these
+identifiers would, without explicit quotation, not be valid variable names.
+
+__Question__
+What is the difference between the objects `dfx` and `dftx`
+Why did we need to create both of them?
+
+Let's come back to the barplot example from above.
+
+```{r figbpgg1}
+pb <- ggplot(groups, aes(x = sampleGroup, y = n))
+```
+
+This creates a plot object `pb`. If we try to display it,
+it creates an empty plot, because we haven't specified what geometric object we want to use.
+All that we have in our `pb` object so far are the data and the aesthetics,
+without a geometric object, the plot remains empty.
+
+
+```{r figbpempty, fig.width = 6, fig.height = 2.5}
+class(pb)
+pb
+```
+
+
+Now we can literally add on the other components of our plot through using the
+`+` operator:
+
+```{r bpgg3, fig.width = 5, fig.height = 4}
+pb <- pb + geom_bar(stat = "identity")
+pb <- pb + aes(fill = sampleGroup)
+pb <- pb + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+pb <- pb + scale_fill_manual(values = groupColor, name = "Groups")
+pb
+```
+
+
+This step-wise buildup --taking a graphics object already produced in
+some way and then further refining it-- can be more convenient and easy to manage than,
+say, providing all the instructions upfront to the single function call that creates the
+graphic.  We can quickly try out different visualization ideas without having to rebuild
+our plots each time from scratch, but rather store the partially finished object and then modify it in
+different ways.  For example we can switch our plot to polar coordinates to create an
+alternative visualization of the barplot.
+
+```{r bpgg4, fig.width = 5, fig.height = 4}
+pb.polar <- pb + coord_polar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()) +
+  xlab("") + ylab("")
+pb.polar + background_grid()
+```
+
+
+
+Note above that we can override previously set `theme` parameters by simply
+setting them to a new value --
+no need to go back to recreating `pb`, where we originally set them.
+
+
+# Visualization of 1D data
+
+A common task in biological data analysis is the comparison between several samples
+of univariate measurements. In this section we'll explore some possibilities for
+visualizing and comparing such samples. As an example, we'll use the intensities of a set
+of four genes Fgf4, Gata4, Gata6 and Sox2 (You can read more about these
+genes in the paper associated with the data). On the array, they are represented by
+
+```{r genes2ps1}
+selectedProbes <- c( Fgf4 = "1420085_at", Gata4 = "1418863_at",
+                   Gata6 = "1425463_at",  Sox2 = "1416967_at")
+```
+```{r genes2ps2, echo = FALSE, eval = FALSE}
+# How I found the selectedProbes:
+AnnotationDbi::select(mouse4302.db,
+   keys = c("Fgf4", "Sox2", "Gata6", "Gata4"), keytype = "SYMBOL",
+   columns = c("PROBEID"))
+```
+```{r genes2ps3, echo = FALSE}
+selectedProbes2 <- AnnotationDbi::select(mouse4302.db,
+   keys = selectedProbes, keytype = "PROBEID", columns = c("SYMBOL"))
+
+stopifnot(identical(sort(selectedProbes2$SYMBOL), sort(names(selectedProbes))),
+          all(selectedProbes[selectedProbes2$SYMBOL] == selectedProbes2$PROBEID))
+```
+
+To extract data from this representation and convert them into a dataframe, we use the
+function `gather` from the `r CRANpkg("tidyr")` (We'll talk more
+about the concepts and mechanics of different data representations later).
+
+```{r gather}
+genes <- rownames_to_column(as.data.frame(exprs(x)[selectedProbes, ]), var = "probe")
+genes <- gather(genes, 
+               key = sample, 
+               value = value, -probe)
+head(genes)
+```
+
+We also add a column that provides the gene symbol along with the probe identifiers.
+
+```{r symbol}
+genes$gene <- names(selectedProbes)[ match(genes$probe, selectedProbes) ]
+```
+
+
+## Barplots
+
+<!-- 
+\begin{marginfigure}
+\begin{center}
+\includegraphics[width=0.8\linewidth]{chap3-r_onedbp1-1}
+\caption{Barplots showing the means of the distributions of expression measurements from 4 probes.}
+\label{rgraphics:fig:onedbp1}
+\end{center}
+\end{marginfigure}
+ -->
+ 
+ 
+A popular way to display data such as in our dataframe `genes` is through barplots.
+```{r onedbp1}
+ggplot(genes, aes( x = gene, y = value)) +
+  stat_summary(fun.y = mean, geom = "bar")
+```
+
+Each bar represents the mean of the values for that gene. Such plots
+are seen a lot in the biological sciences, as well as in the popular media. The data summarization
+into only the mean loses a lot of information, and given the amount of space it takes, a barplot
+can be a poor way to visualize data. (In fact, if the mean is not an appropriate summary, such
+as for highly skewed distributions, or datasets with outliers, the barplot can be
+outright misleading.)
+
+Sometimes we want to add error bars, and one way to achieve this in `r CRANpkg("ggplot2")` is as follows.
+
+```{r onedbp2}
+
+ggplot(genes, aes( x = gene, y = value, fill = gene)) +
+  stat_summary(fun.y = mean, geom = "bar") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar",
+               width = 0.25)
+```
+
+Here, we see again the principle of layered graphics: we use two summary functions,
+`mean` and `mean_cl_normal`, and two associated geometric objects,
+`bar` and `errorbar`. The function `mean_cl_normal` is from
+the `r CRANpkg("Hmisc")` package and computes the standard error or confidence
+limits of the mean; it's a simple function, and we could also compute it
+ourselves using base R expressions if we wished to do so.  We also colored the bars to
+make the plot more pleasant.
+
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_onedbp2-1} -->
+<!-- \caption{Barplots with error bars indicating standard error of the mean.} -->
+<!-- \label{rgraphics:fig:onedbp2} -->
+<!-- \end{marginfigure} -->
+
+
+## Boxplots
+
+It's easy to show the same data with boxplots.
+
+```{r onedboxpl, fig.width = 3.75, fig.height = 3.75}
+p <- ggplot(genes, aes( x = gene, y = value, fill = gene))
+p + geom_boxplot()
+```
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_onedboxpl-1} -->
+<!-- \caption{Boxplots.} -->
+<!-- \label{rgraphics:fig:onedboxpl} -->
+<!-- \end{marginfigure} -->
+
+Compared to the barplots, this takes a similar amount of space, but is much more
+informative. We see that two of the genes (Gata4, Gata6)
+have relatively concentrated distributions, with only a few data points venturing out to
+the direction of higher values. For Fgf4, we see that the distribution is right-skewed:
+the median, indicated by the horizontal black bar within the box is closer to the lower (or
+left) side of the box. Analogously, for Sox2 the distribution is left-skewed.
+
+
+## Violin plots
+
+
+A variation of the boxplot idea, but with an even more direct representation of the shape
+of the data distribution, is the violin plot. Here, the shape of the violin gives a rough
+impression of the distribution density.
+
+```{r onedviolin, fig.width = 3.75, fig.height = 3.75}
+p + geom_violin()
+```
+
+
+## Dot plots and beeswarm plots
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_onedviolin-1} -->
+<!-- \caption{Violin plots.} -->
+<!-- \label{rgraphics:fig:onedviolin} -->
+<!-- \end{marginfigure} -->
+
+If the number of data points is not too large, it is possible to show the data points
+directly, and it is good practice to do so, compared to using more abstract
+summaries.
+However, plotting the data directly will often lead to overlapping points, which can be
+visually unpleasant, or even obscure the data. We can try to layout the points so that
+they are as near possible to their proper locations without
+overlap [@Wilkinson_1999].
+
+```{r oneddot, fig.width = 5, fig.height = 5}
+p + geom_dotplot(binaxis = "y", binwidth = 1/6,
+       stackdir = "center", stackratio = 0.75,
+       aes(color = gene))
+```
+
+The plot shown is called a dotplot. The \(y\)-coordinates of
+the points are discretized into bins (above we chose a bin size of 1/6), and then they
+are stacked next to each other.
+
+A fun alternative is provided by the package `r CRANpkg("beeswarm")`.
+(Yet another alternative is the `r CRANpkg("ggbeeswarm")` package, which provides 
+`geom_beeswarm` for `ggplot`.)
+
+It works with base R graphics and is not directly integrated into 
+`r CRANpkg("ggplot2")` 's data flows, so we can
+either use the base R graphics output, or pass on the point coordinates to
+`ggplot` as follows.
+
+```{r onedbee, fig.width = 5, fig.height = 5}
+library("beeswarm")
+bee <- beeswarm(value ~ gene, data = genes, spacing = 0.7)
+ggplot(bee, aes(x = x, y = y, color = x.orig)) +
+  geom_point(shape = 19) + xlab("gene") + ylab("value") +
+  scale_fill_manual(values = selectedProbes)
+```
+
+<!-- \begin{figure} -->
+<!-- \includegraphics[width=.49\linewidth]{chap3-r_oneddot-1} -->
+<!-- \includegraphics[width=.49\linewidth]{chap3-r_onedbee-2} -->
+<!-- \caption{Left: dot plots, made using `geom_dotplot` from `r CRANpkg("ggplot2")`. -->
+<!-- Right: beeswarm plots, with layout obtained via the `r CRANpkg("beeswarm")` package and -->
+<!-- plotted as a scatterplot with `ggplot}.` -->
+<!-- \label{rgraphics:fig:oneddot} -->
+<!-- \end{figure} -->
+
+The default layout method used by `beeswarm` is called _swarm_. It places
+points in increasing order. If a point would overlap an existing point, it is shifted
+sideways (along the \(x\)-axis) by a minimal amount sufficient to avoid overlap.
+As you have seen in the above code examples, some twiddling with layout parameters is
+usually needed to make a dot plot or a beeswarm plot look good for a particular dataset.
+
+
+## Density plots
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_oneddens-1} -->
+<!-- \caption{Density plots.} -->
+<!-- \label{rgraphics:fig:oneddens} -->
+<!-- \end{marginfigure} -->
+
+Yet another way to represent the same data is by density plots.
+
+```{r oneddens, fig.width = 3.75, fig.height = 3.75}
+ggplot(genes, aes( x = value, color = gene)) + geom_density()
+```
+
+Density estimation has a number of complications, in particular, the need for choosing a
+smoothing window. A window size that is small enough to capture peaks in the dense regions
+of the data may lead to instable ("wiggly") estimates elsewhere. On the other hand, if
+the window is made bigger, pronounced features of the density, such as sharp peaks, may be
+smoothed out.  Moreover, the density lines do not convey the information on how much data
+was used to estimate them, and density plots  can be
+especially problematic if the sample sizes for the curves differ.
+
+
+
+## ECDF plots
+
+The mathematically most convenient way to describe the distribution of a one-dimensional
+random variable \(X\) is its cumulative distribution function (CDF), i.e., the function
+$$
+F(x) = P(X\le x),
+$$
+
+where \(x\) takes all values along the real axis. The density of \(X\) is then the derivative
+of \(F\), if it exists. (By its definition, \(F\) tends to 0 for small \(x\) (\(x\to-\infty\)) and
+to 1 for large \(x\) (\(x\to+\infty\)).)  The definition of the CDF can also be
+applied to finite samples of \(X\), i.e., samples \(x_1,\ldots,x_n\). The empirical
+cumulative distribution function (ECDF) is simply:
+
+$$
+F_{n}(x) = \frac{1}{n}\sum_{i=1}^n \mathbf{1}_{x_i\le x}.
+$$
+
+```{r onedecdf, fig.width = 3.75, fig.height = 3.75}
+ggplot(genes, aes( x = value, color = gene)) + stat_ecdf()
+```
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_onedecdf-1} -->
+<!-- \caption{Empirical cumulative distribution functions (ECDF).} -->
+<!-- \label{rgraphics:fig:onedecdf} -->
+<!-- \end{marginfigure} -->
+
+The ECDF has several nice properties:
+
+  * It is lossless --- the ECDF \(F_{n}(x)\) contains all the information contained in the original 
+   sample  \(x_1,\ldots,x_n\) (except the ---unimportant--- order of the values).
+   
+ * As \(n\) grows, the ECDF \(F_{n}(x)\) converges to the true CDF \(F(x)\). Even for
+   limited sample sizes \(n\), the difference between the two functions tends to be
+   small. Note that this is not the case for the empirical density! Without smoothing, the
+   empirical density of a finite sample is a sum of Dirac delta functions, which is
+   difficult to visualize and quite different from any underlying smooth, true density.
+   With smoothing, the difference can be less pronounced, but is difficult to control, as
+   we discussed above.
+
+
+
+
+## The effect of transformations on densities
+
+It is tempting to look at histograms or density plots and inspect them for evidence of
+bimodality (or multimodality) as an indication of some underlying biological phenomenon.
+Before doing so, it is important to remember that the number of modes of a density depends
+on scale transformations of the data, via the chain rule. A simple example, with a
+mixture of two normal distributions, is shown below.
+
+```{r gridExtra, echo = FALSE}
+library("gridExtra")
+```
+```{r onedtrsf, fig.width = 3.75, fig.height = 3.5}
+sim <- data_frame(
+   x = exp(rnorm(
+     n    = 1e5,
+     mean = sample(c(2, 5), size = 1e5, replace = TRUE))))
+
+ggplot(sim, aes(x)) +
+    geom_histogram(binwidth = 10, boundary = 0) + xlim(0, 400)
+ggplot(sim, aes(log(x))) + geom_histogram(bins = 30) 
+```
+
+__Question__ 
+
+Consider a log-normal mixture model as in the code above.  What is the
+density function of \(X\)? What is the density function of \(log(X)\)?  How many modes do
+these densities have, as a function of the parameters of the mixture model (mean and
+standard deviation of the component normals, and mixture fraction)?
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=0.8\linewidth]{chap3-r_onedtrsf-1}\\ -->
+<!-- \includegraphics[width=0.8\linewidth]{chap3-r_onedtrsf-2} -->
+<!-- \caption{Histograms of the same data, with and without logarithmic transformation. -->
+<!--   The number of modes is different.} -->
+<!-- \label{rgraphics:fig:onedtrsf} -->
+<!-- \end{marginfigure} -->
+
+
+# Visualization of 2D data: scatterplots
+
+
+Scatterplots are useful for visualizing treatment--response comparisons, 
+associations between variables, or paired data (e.g., a disease biomarker in
+several patients before and after treatment). We use the two dimensions of our plotting
+paper, or screen, to represent the two variables.
+Let us take a look at differential expression between a wildtype and an FGF4-KO sample.
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_twodsp1-1} -->
+<!-- \caption{Scatterplot of `r nrow(dfx)` expression measurements for two of the samples.} -->
+<!-- \label{rgraphics:fig:twodsp1} -->
+<!-- \end{marginfigure} -->
+
+```{r twodsp1, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp <- ggplot(dfx, aes(x = `59 E4.5 (PE)` ,
+                      y = `92 E4.5 (FGF4-KO)`))
+scp + geom_point()
+```
+
+The labels `r scp$labels$x` and `r scp$labels$y` refer to column names
+(sample names) in the dataframe `dfx`, which we created above. Since they contain
+special characters (spaces, parentheses, hyphen) and start with numerals, we need to
+enclose them with the downward sloping quotes to make them syntactically digestible for R.
+In the plot, we get a dense point cloud that
+we can try and interpret on the outskirts of the cloud, but we really have no idea
+visually how the data are distributed within the denser regions of the plot.
+
+One easy way to ameliorate the overplotting is to adjust the transparency (alpha value) of
+the points by modifying the `alpha` parameter of `geom_point`.
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_twodsp2-1} -->
+<!-- \caption{As Figure~\ref{rgraphics:fig:twodsp1}, but with semi-transparent points to resolve -->
+<!-- some of the overplotting.} -->
+<!-- \label{rgraphics:fig:twodsp2} -->
+<!-- \end{marginfigure} -->
+
+```{r twodsp2, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp  + geom_point(alpha = 0.1)
+```
+
+This is already better than the previous figure, but in the very density regions
+even the semi-transparent points quickly overplot to a featureless black mass, while the
+more isolated, outlying points are getting faint.
+An alternative is a contour plot of the 2D density,
+which has the added benefit of not rendering all of the points on the plot.
+
+```{r twodsp3, fig.width = 3.75, fig.height = 3.75}
+scp + geom_density2d()
+```
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_twodsp3-1} -->
+<!-- \caption{As Figure~\ref{rgraphics:fig:twodsp1}, but rendered as a contour plot of the 2D density estimate.} -->
+<!-- \label{rgraphics:fig:twodsp3} -->
+<!-- \end{marginfigure} -->
+
+However, we see that the point cloud at the bottom right (which
+contains a relatively small number of points) is no longer represented. We can somewhat overcome
+this by tweaking the bandwidth and binning parameters of `geom_density2d`:
+
+```{r twodsp4, fig.width = 3.75, fig.height = 3.75}
+scp + geom_density2d(h = 0.5, bins = 60)
+```
+
+We can fill in each space between the contour lines with the relative density of points by
+explicitly calling the function `stat_density2d` (for which
+`geom_density2d` is a wrapper) and using the geometric object `polygon`:
+
+```{r twodsp5, fig.width = 5.25, fig.height = 3.75, message = FALSE}
+library("RColorBrewer")
+colorscale <- scale_fill_gradientn(
+    colors = rev(brewer.pal(9, "YlGnBu")),
+    values = c(0, exp(seq(-5, 0, length.out = 100))))
+
+scp + stat_density2d(h = 0.5, bins = 60,
+          aes( fill = ..level..), geom = "polygon") +
+      colorscale + coord_fixed()
+```
+
+<!-- \begin{figure} -->
+<!-- \includegraphics[width=0.416\linewidth]{chap3-r_twodsp4-1} -->
+<!-- \includegraphics[width=0.582\linewidth]{chap3-r_twodsp5-1} -->
+<!-- \caption{Left: as Figure~\ref{rgraphics:fig:twodsp3}, but with smaller smoothing bandwidth and tighter -->
+<!-- binning for the contour lines. Right: with color filling.} -->
+<!-- \label{rgraphics:fig:twodsp4} -->
+<!-- \end{figure} -->
+
+We used the function `brewer.pal` from the package `r CRANpkg("RColorBrewer")` to
+define the color scale, and we added a call to `coord_fixed` to fix the
+aspect ratio of the plot, to make sure that the mapping of data range to \(x\)- and
+\(y\)-coordinates is the same for the two variables.
+
+The density based plotting methods  are more visually
+appealing and interpretable than the overplotted point clouds, though 
+we have to be careful in using
+them as we lose a lot of the information on the outlier points in the sparser regions of
+the plot. One possibility is using `geom_point` to add such points back in.
+
+But arguably the best alternative, which avoids the limitations of smoothing, 
+is hexagonal binning [@Carr_1987].
+
+
+```{r twodsp6, fig.width = 5.25, fig.height = 3.75}
+scp + geom_hex() + coord_fixed()
+scp + geom_hex(binwidth = c(0.2, 0.2)) + colorscale +
+      coord_fixed()
+```
+
+<!-- \begin{figure} -->
+<!-- \includegraphics[width=0.499\linewidth]{chap3-r_twodsp6-1} -->
+<!-- \includegraphics[width=0.499\linewidth]{chap3-r_twodsp6-2} -->
+<!-- \caption{Hexagonal binning. Left: default parameters. Right: finer bin sizes and -->
+<!--   customized color scale.} -->
+<!-- \label{rgraphics:fig:twodsp6} -->
+<!-- \end{figure} -->
+
+
+
+## Plot shapes
+
+Choosing the proper shape for your plot is important to make sure the information is
+conveyed well. By default, the shape parameter, that is, the ratio, between the height of
+the graph and its width, is chosen by `r CRANpkg("ggplot2")` based on the available space in
+the current plotting device. The width and height of the device are specified when it is
+opened in R, either explicitly by you or through default parameters (E.g., see
+  the manual pages of the `pdf` and `png` functions). Moreover, the
+graph dimensions also depend on the presence or absence of additional decorations, like
+the color scale bars in hexbin plot.
+
+There are two simple rules that you can apply for scatterplots:
+
+* If the variables on the two axes are measured in the same units, then make sure that
+  the same mapping of data space to physical space is used -- i.e., use
+  `coord_fixed`.  In the scatterplots above, both axes are the logarithm
+  to base 2 of expression level measurements, that is a change by one unit has the same
+  meaning on both axes (a doubling of the expression level).
+  
+* Another case is principal
+  component analysis (PCA), where the x--axis typically represents component 1, and the
+  y--axis component 2. Since the axes arise from an orthonormal rotation of input data
+  space, we want to make sure their scales match. Since the variance of the data is (by
+  definition) smaller along the second component than along the first component (or at
+  most, equal), well--done PCA plots usually have a width that's larger than the height.
+  (The aspect ratio should be equal to the ratio of the variances of the PCs if the
+  data has been centered)
+  
+* If the variables on the two axes are measured in different units, then we can still
+  relate them to each other by comparing their dimensions. The default in many plotting
+  routines in R, including `r CRANpkg("ggplot2")`, is to look at the range of the data and map
+  it to the available plotting region. However, in particular when the data more or less
+  follow a line, looking at the typical slope of the line can be useful.
+  This is called banking [@Cleveland_1988].
+  
+
+To illustrate banking, let's use the classic sunspot data from Cleveland's paper.
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_banking1-1}\\ -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_banking2-1} -->
+<!-- \caption{The sunspot data. In the upper panel, the plot shape is roughly quadratic, a -->
+<!--   frequent default choice. In the lower panel, a technique called \emph{banking} was used -->
+<!--   to choose the plot shape.} -->
+<!-- \label{rgraphics:fig:banking} -->
+<!-- \end{marginfigure} -->
+
+```{r banking1, fig.width = 4.75, fig.height = 3.75}
+library("ggthemes")
+sunsp = tibble(year   = time(sunspot.year),
+               number = as.numeric(sunspot.year))
+sp = ggplot(sunsp, aes(x = year, y = number)) + geom_line()
+sp
+```
+
+We can clearly see long-term fluctuations in the amplitude of sunspot activity cycles, with
+particularly low maximum activities in the early 1700s, early 1800s, and around the turn
+of the 20\(^\text{th}\) century. But now lets try out banking.
+
+```{r banking2, fig.width = 4.75, fig.height = 1}
+ratio = with(sunsp, bank_slopes(year, number))
+sp + coord_fixed(ratio = ratio)
+```
+
+What the algorithm does is to look at the slopes in the curve, and in particular, the
+above call to `bank_slopes` computes the median absolute slope, and then with
+the call to `coord_fixed` we shape the plot such that this quantity becomes
+1. Quite counter-intuitively, even though the plot takes much smaller space, we see more on it!
+Namely, we can see the saw-tooth shape of the sunspot cycles, with sharp rises and more
+slow declines.
+
+
+
+# 3--5D data
+
+Sometimes we want to show the relations between more than two variables. Obvious choices
+for including additional dimensions are the plot symbol shapes and colors. The
+`geom_point` geometric object offers the following aesthetics (beyond
+`x` and `y`):
+
+* `fill`
+* `color`
+* `shape`
+* `size`
+* `alpha`
+
+They are explored in the manual page of the `geom_point`
+function. `fill` and `color` refer to the fill and outline color of an
+object, `alpha` to its transparency level. Above, we have used color or transparency to
+reflect point density and avoid the obscuring effects of overplotting. Instead, we can use
+them show other dimensions of the data (but of course we can only do one or the other). In
+principle, we could use all the 5 aesthetics listed above simultaneously to show up to
+7-dimensional data; however, such a plot would be hard to decipher, and usually we are
+better off with sticking to at most one or two additional dimensions and mapping them to a
+choice of the available aesthetics.
+
+
+## Faceting
+
+
+Another way to show additional dimensions of the data is to show multiple plots that
+result from repeatedly subsetting (or "slicing") our data based on one (or more) of the
+variables, so that we can visualize each part separately. So we can, for instance,
+investigate whether the observed patterns among the other variables are the same or
+different across the range of the faceting variable. Let's look at an example: (The
+  first two lines this code chunk are not strictly necessary -- they're just reformatting
+  the `lineage` column of the `dftx` dataframe, to make the
+  plots look better.)
+
+```{r facet1, fig.width = 8, fig.height = 2}
+
+dftx$lineage %<>% sub("^$", "no", .)
+dftx$lineage %<>% factor(levels = c("no", "EPI", "PE", "FGF4-KO"))
+
+ggplot(dftx, aes( x = X1426642_at, y = X1418765_at)) +
+  geom_point() + facet_grid( . ~ lineage )
+```
+
+<!-- \begin{figure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_facet1-1} -->
+<!-- \caption{An example for \emph{faceting}: the same data as in -->
+<!--   Figure~\ref{rgraphics:fig:scp2layers1}, but now split by the categorical variable -->
+<!--   \Robject{lineage}.} -->
+<!-- \label{rgraphics:fig:facet1} -->
+<!-- \end{figure} -->
+
+ We used the formula
+language to specify by which variable we want to do the splitting, and that the separate
+panels should be in different columns: `facet_grid(~ lineage)`. In fact, we
+can specify two faceting variables, as follows:
+
+```{r facet2, fig.width = 8, fig.height = 6}
+ggplot( dftx,
+  aes( x = X1426642_at, y = X1418765_at)) + geom_point() +
+   facet_grid( Embryonic.day ~ lineage )
+```
+
+<!-- \begin{figure} -->
+<!--   \begin{center} -->
+<!-- \includegraphics[width=.8\linewidth]{chap3-r_facet2-1} -->
+<!-- \caption{\emph{Faceting}: the same data as in Figure~\ref{rgraphics:fig:scp2layers1}, -->
+<!--   split by the categorical variables `Embryonic.day}` (rows) and `lineage` -->
+<!--   (columns).} -->
+<!-- \label{rgraphics:fig:facet2} -->
+<!--   \end{center} -->
+<!-- \end{figure} -->
+
+Another useful function is `facet_wrap`: if the faceting variable has too many
+levels for all the plots to fit in one row or one column, then this function can be used
+to wrap them into a specified number of columns or rows.
+
+We can use a continuous variable by discretizing it into levels. The function
+`cut` is useful for this purpose.
+
+```{r facet3, fig.width = 4, fig.height = 4}
+ggplot(mutate(dftx, Tdgf1 = cut(X1450989_at, breaks = 4)),
+   aes( x = X1426642_at, y = X1418765_at)) + geom_point() +
+   facet_wrap( ~ Tdgf1, ncol = 2 )
+```
+
+We see that the number of points in the four
+panel is different, this is because `cut` splits into bins of equal length, not
+equal number of points. If we want the latter, then we can use `quantile` in
+conjunction with `cut`.
+
+<!-- \begin{marginfigure} -->
+<!-- \includegraphics[width=\linewidth]{chap3-r_facet3-1} -->
+<!-- \caption{\emph{Faceting}: the same data as in Figure~\ref{rgraphics:fig:scp2layers1}, -->
+<!--   split by the continuous variable `X1450989\_at` and arranged by -->
+<!--   `facet\_wrap}.` -->
+<!-- \label{rgraphics:fig:facet3} -->
+<!-- \end{marginfigure} -->
+
+__Axes scales__ In the  figure, the axes
+scales are the same for all plots.  Alternatively, we could let them vary by setting the
+`scales` argument of the `facet_grid`  and `facet_wrap`; this
+parameters allows you to control whether to leave the \(x\)-axis, the \(y\)-axis, or both to
+be freely variable. Such alternatives scalings might allows us to see the full detail of
+each plot and thus make more minute observations about what is going on in each. The
+downside is that the plot dimensions are not comparable across the groupings.
+
+__Implicit faceting__ You can also facet your plots (without explicit
+calls to `facet_grid` and `facet_wrap`) by specifying the
+aesthetics. A very simple version of implicit faceting is using a factor as your
+\(x\)--axis.
+
+
+
+
+# Data handling in R
+
+Visualization and statistical analyses are an important tool for insight 
+generation, but it is rare that you get the data in exactly the right form 
+you need. 
+
+Often, you’ll need to 
+create some new variables or summaries, or maybe you just want to rename 
+the variables or reorder the observations in order to make the data a 
+little easier to work with. 
+
+Furthermore, you will have to how to "munge" or "wrangle"
+your data: reshaping the data into useful format for visualization and statistical
+modelling.
+
+Once we have these basic data handling techniques in our hands, we will
+look at "tidy data" and the split--apply--combine strategy for data analysis, 
+which represents a unified framework for conceptualizing many data analysis tasks.
+
+We will start gently by introducing the `r CRANpkg("tibble")` package. A tibble
+is a data.frame which a lot of tweaks and more sensible defaults that make your
+life easier, among other things it ... 
+
+1. Never coerces inputs (i.e. strings stay as strings!)
+
+1. Never adds row.names
+
+1. Never munges column names (they stay as they are)
+
+1. Only recycles length 1 inputs.
+
+1. Automatically adds column names.
+
+
+
+## Introducing tibbles: a data.frame replacement
+
+We will introduce tibbles by looking at a typical data set in a tabular format, where
+the rows represent the samples and the columns the variables measured. The
+data set `bodyfat` contains various body measures for 252 men. We can turn
+it into a tibble by using the function `as_tibble()`.
+
+First, we import the data set and inspect it a bit. The first thing we notice
+is that tibbles prints only the first 10 rows by default. Tibbles are designed 
+so that you don’t accidentally overwhelm your console when you print large data
+frames. Additionally, we get a nice summary of the variables available in our
+data set.
+
+```{r loadBodyfat,   echo = TRUE}
+load("bodyfat.rda")
+bodyfat <- as_tibble(bodyfat)
+bodyfat
+```
+
+
+## Subsetting and viewing: dplyr verbs
+
+The package  `r CRANpkg("dplyr")` provides a "grammar" of data manipulation.
+We will also use it later in the context of the  "split--apply--combine''
+strategy.
+
+Since the first thing you do in a data manipulation task is to subset/transform
+your data, it includes "verbs" that provide basic functionality. We will
+introduce these in the following. The command structure for all `r CRANpkg("dplyr")` 
+verbs is :
+
+  * first argument is a data frame
+  * return value is a data frame
+  * nothing is modified in place
+
+Note that `r CRANpkg("dplyr")` generally does not preserve row names.
+
+
+### Selecting rows (observations) by their values with `filter()`
+
+The function `filter()` allows you to select a subset of the rows of
+a data frame. The first argument is the name of the data frame, and the
+second and subsequent are filtering expressions evaluated in the context of
+that data frame. In the command below, we get all samples with age between 
+40 and 60.
+
+```{r }
+filter(bodyfat, age > 40, age < 60 )
+```
+
+`filter()`  works similarly to `subset()` except
+that you can give it any number of filtering
+conditions which are joined together with & (not &&
+which is easy to do accidentally otherwise).
+You can use other boolean operators explicitly as in :
+
+```{r }
+
+head(filter(bodyfat, age == 40 | age == 60 ), 3)
+
+tail(filter(bodyfat, age == 40 | age == 60 ), 3)
+```
+
+`head()` and `tail()` return the first and the last
+entries of a data frame respectively.
+
+### Arrange rows (samples) with `arrange()`
+
+`arrange()` works similarly to  `filter()` except that
+instead of filtering or selecting rows, it reorders them.
+It takes a data frame, and a set of column names
+(or more complicated expressions) to order by.
+If you provide more than one column name, each additional column will be
+used to break ties in the values of preceding columns:
+
+
+```{r }
+head(arrange(bodyfat, age, percent.fat),3 )
+```
+
+Use `desc()` to order a column in descending order:
+
+```{r }
+head(arrange(bodyfat, dplyr::desc(age), percent.fat),3 )
+```
+
+
+### Select columns (variables) by their names with `select()`
+
+Often you work with large data sets with many columns where only a few are
+actually of interest to you. `select()`
+allows you to rapidly zoom in on a useful subset using operations that usually
+only work on numeric variable positions. This way, we can e.g. select all
+body measures:
+
+```{r }
+head(dplyr::select(bodyfat, age, height, percent.fat ))
+
+head(dplyr::select(bodyfat, weight:wrist.circum))
+
+## exclude all body measures
+head(dplyr::select(bodyfat, -(weight:wrist.circum)))
+```
+
+
+### Create new variables using existing ones with `mutate()`
+
+Additionally, `dplyr::mutate()` allows to add columns.
+For example, going to a small "patients" data set, which contains height and 
+weight, we can easily calculate a BMI column using  `mutate`:
+
+```{r mutate-example}
+pat <- read_csv("Patients.csv")
+mutate(pat, BMI = Weight / Height^2)
+```
+
+### Collapse data down to summaries with `summarize()`
+
+The function `summarize()`, which creates a new data frame
+from a calculation on the current one and collapses `bodyfat` to a single
+row. This  not very useful yet but becomes very handy on grouped/splitted data.
+
+```{r }
+dplyr::summarize(bodyfat, mean.age = mean(age, na.rm = TRUE),
+              mean_BMI = mean( (weight*0.454) / (height*.0254)^2 ) )
+```
+
+
+
+## The concept of tidy data
+
+In a nutshell, a  dataset is a collection of values, usually either numbers
+(if quantitative) or strings (if qualitative). Values are organized in two ways:
+Every value belongs to a variable and an observation.
+
+A variable contains all values that measure the same underlying attribute 
+(like height, temperature, duration) across units.  An observation 
+contains all values measured on the same unit (like a person, or a day, 
+or a race) across attributes.
+
+Now, a tidy data frame now organizes the data in such a way that
+each observation corresponds to an single line in the data set. This representation
+is often referred to as a "long" data tables.
+
+In general, a long data table is  the most appropriate format for 
+downstream analysis, although a wide representation is better for viewing 
+the data. For a thorough discussion of this topic see the paper by
+Hadley @greycite53870.
+
+In any case, we often need to move between the different shapes. The 
+`r CRANpkg("tidyr")` has two main functions that allows us to go back and forth:
+
+* `gather()` takes multiple columns, and gathers them 
+into key--value pairs: it  makes  "wide" data longer.
+
+* `spread()` takes two columns (key & value) and
+spreads into multiple columns, it makes "long" data wider.
+
+
+## A simple example
+
+Let's illustrate these concepts using a simple "messy" data set.
+In this data, both the columns and the rows are labeled.
+
+```{r import_preg}
+preg <- read_csv("https://raw.githubusercontent.com/tidyverse/tidyr/master/vignettes/preg.csv")
+preg
+```
+
+A tidy version of the pregnancy data looks like this:
+
+
+```{r, tidy_preg, message = FALSE}
+
+preg2 <- preg %>% 
+  gather(treatment, n, treatmenta:treatmentb) %>%
+  mutate(treatment = str_replace(treatment, "treatment", "")) %>%
+  arrange(name, treatment)
+preg2
+```
+
+We have gathered the two treatment columns into 
+a new column `n` for the number of times the treatment has been received and
+create a new treatment column with the treatment keys.
+
+This makes the values, variables and observations more clear. 
+The dataset contains 18 values representing three variables and 
+six observations. The variables are:
+
+1. `name`, with three possible values (John, Mary, and Jane).
+
+2. `treatment`, with two possible values (a and b).
+
+3. `n`, with five or six values depending on how you think of the missing 
+   value (`r sort(preg2$n, na.last = TRUE)`)
+
+The variables `name` and `treatment` represent keys, while `n` represents
+the values.
+
+## Computing with tidy data sets: the split--apply--combine strategy
+
+Very often, data analysis happens in a "split--apply--combine" fashion.
+You  break up a bigger problem into manageable pieces, operate on each piece
+independently and then put all the pieces back together.
+
+We will illustrate this using a subset of plates from a high throughput screen
+RNAi screen [@Simpson_2012]. In a nutshell, plates with
+384 spots containing HeLa cells were transfected with specific siRNAs targeting
+certain genes.
+
+The general aim of the screen was then to identify  genes important in the early
+secretory pathway. This was studied by imaging the transport of a model protein
+called VSVG from the ER to the golgi and then to the plasma membrane.
+
+Here we look at 3 plates and all their replicates from the screen, the data
+contains annotation information, (e.g. plate number, well number, well row and column etc.)
+and the columns `TransR.n` (for normalized transport ratio) which
+is  a measure indicating the transport success as well as `CellNumber.n` containing
+the number of cells per spot. The transport ratio is the ratio of intracellular VSVG
+protein over VSVG protein exposed on the cell surface.
+
+Note that it is common to represent  a spot on a plate by combination of its row-- and
+column number, whereby row numbers are given by upper--case letters. We first load
+the data and turn it into a tibble.
+
+
+```{r HTS-data,   echo = TRUE}
+load("HTSdata.RData")
+HTSdata <- as_tibble(HTSdata)
+HTSdata
+```
+
+Not that our HTS data set is not actually "tidy", as each row represents multiple
+observations, namely various measurement for each single well. This is however 
+relatively inconsequential, as we can select individual variables after grouping.
+
+### Grouping and summarizing
+
+The `r CRANpkg("dplyr")` now provides the framework to use a split--apply-combine
+strategy. These selection verbs introduced above are useful, but they become
+really powerful when you combine them with the idea of "group by" or
+__splitting__ operator, repeating the operation individually on groups of
+observations within  the dataset.
+
+In `r CRANpkg("dplyr")`, you use the `group_by()` function to describe how to break
+a dataset
+down into groups of rows. You can then use the resulting object in the exactly
+the same verb--functions as above; they'll automatically work ``by group'' when
+the input is a grouped.
+
+ As an example, in order to split our data according
+to the plate numbers, we can use the following commands
+
+
+```{r split-example}
+split_HTS <- group_by(HTSdata, plate)
+split_HTS
+```
+
+We get back a `grouped_df`, which is a special class in `r CRANpkg("dplyr")`
+that is also a `data.frame`. We can also split by single plates
+
+
+```{r split-example-2}
+split_HTS_rep  <-  group_by(HTSdata, plate, replicate)
+split_HTS_rep
+```
+
+We can now make full use of the  `summarize()`
+function, which constructs a new data frame using the columns of the current one.
+Fore example, we can easily use `summarize` to compute average cell numbers
+per single plate using the grouped data frame just obtained.
+
+
+```{r summarize-example}
+HTS_cellNumbers  <- dplyr::summarize(split_HTS_rep, mean_CN = mean(CellNumber, na.rm = T))
+HTS_cellNumbers
+```
+
+We see that plate 152 has a lower cell number than the other two plates on average.
+It is also handy to use custom functions, for example computing the ratio of mean
+and median cell number for every plate:
+
+```{r custom function-example}
+HTS_skew <-  dplyr::summarize(split_HTS_rep, 
+      HTS_CN_skew = mean(CellNumber, na.rm = T) / median(CellNumber, na.rm = T))
+
+HTS_skew
+```
+
+
+We see that the cell numbers are quite symmetrically distributed. Note that
+summarizing peels of one level of grouping, thus we can now easily
+compute a mean skew per plate.
+
+```{r  peeling example}
+plate_HTS_skew <-  dplyr::summarize(HTS_skew, mean_CN_skew = mean(HTS_CN_skew))
+
+plate_HTS_skew
+```
+
+### Other useful helper function for data handling 
+
+
+`r CRANpkg("dplyr")` provides a handful of others useful helper functions:
+
+
+
+* `glimpse()`: function that
+will print columns down the page and data rows run across.
+
+
+*`sample_n()` : sample \(n\) random rows from a `tbl_df`.
+There also exists sample_frac()
+
+* `n()` : number of observations in the current group
+
+* `tally()` : will call `n()` or `sum(n)`,
+depending on whether you call it you're tallying for the
+first time, or re--tallying.
+
+* `n_distinct(x)` : count the number of unique values in `x`.
+
+*  `first(x)`, `last(x)` and `nth(x, n)`
+
+
+
+## The chaining operator
+
+The `r CRANpkg("dplyr")` interface is functional in the sense that function calls don't
+have side--effects so  you must always save their results. This doesn't lead
+to particularly elegant code if you want to do many operations at once.
+You either have to do it step--by--step or wrap the function calls inside each other
+as we did above.
+
+This is difficult to read because the order of the operations is from inside to out,
+and the arguments are a long way away from the function.
+
+To fix this, we use the chaining (or piping) operator `>`. 
+x  %>%  f(y)  is simply f(x, y), so one can use
+it to rewrite multiple operations in such a way that they can be read
+from you can read from left--to--right,
+top--to--bottom. A simple example will make that clear: We create 
+two vectors and calculate Euclidian distance between them. Instead of
+the usual way:
+
+```{r chainingSimpleExample_1}
+x1 <- 1:5; x2 <- 2:6
+sqrt(sum((x1 - x2)^2))
+```
+
+We can use the piping operator
+
+```{r chainingSimpleExample_2}
+(x1 - x2)^2 %>%
+sum() %>%
+sqrt()
+```
+
+Which makes the set of operations much easier to digest and understand.
+
+which is much easier to grasp. We can also apply this to our HTS:
+
+```{r chaining example}
+## number of plates
+dplyr::summarize(HTSdata, n_distinct(plate) )
+
+## number of replicates per plate for  plates
+## plate number greater than 15
+
+HTSdata %>%
+group_by(plate)  %>%
+dplyr::summarize(rep_per_plate = n_distinct(replicate)) %>%
+filter(plate > 15)
+
+```
+
+It makes clear that you group first,
+then you summarize and then you filter.
+
+# Case study 1: plotting small and large--scale experimental data
+
+In this case study we will focus on key principles and good
+practices for presenting small to medium datasets with 
+the aim of comparing results from different experimental groups. 
+
+As a general rule, one should show as much of the actual data as possible 
+instead of summarizing datasets via means or variances. 
+Even larger datasets can be displayed efficiently using an 
+appropriate plot; bars and boxes to visualize summary statistics 
+can serve as additional visual guides.
+
+## A small data set
+
+Let us assume that we have a fluorescent marker for detecting 
+a recombination event in bacterial cells. We study a wild type strain and 
+three different mutant strains and use three replicates for each mutant. 
+We calculate the rate of recombination for each strain by dividing the number 
+of recombinant bacteria by the total number of bacteria. Our raw data are 
+therefore ratios. 
+
+We first apply a logarithmic transformation to distribute these ratios 
+more symmetrically along the Y-axis and to stabilize their variance. 
+The base 2 (log_2) is usually chosen, because the scale is directly interpretable 
+for log-fold changes: a value of 1 means half as much, while +1 means twice as much,
++2 four times as much, and so on. The raw data already show that the mutants have a 
+decreased recombination rate relative to wild-type.
+
+For transforming the variables in our data frame, we use the function `map_df` from
+the `r CRANpkg("purrr")` package. This function works with vectors and lists. You
+can think of a list as a recursive vector: vector elements can contain arbitrarily 
+complex objects. In that sense a data frame is a vector of columns that represent 
+variables. 
+
+So if we want to apply a function to (every) variable in a data frame, we can use
+`map`. We then turn the input data set into a tidy data set.
+ 
+
+```{r importData}
+smallData <- read_csv("input_data.csv")
+
+smallData <- map_df(smallData, function(col){
+   if (is_numeric(col)) col <- log2(col)
+   col
+   })
+
+smallData$Group <- factor(smallData$Group, levels = smallData$Group)
+
+gg_data <- gather(smallData, key = "repNo", value = "l2Ratio", Rep_1:Rep_3)
+```
+
+
+## Bar charts of small data
+
+ We can visualize the data by using 
+a typical bar chart often seen in publications, where the bar represents 
+the mean of the data, and error bars denote the 95 confidence interval.
+
+```{r barChart, dependson="importData"}
+
+gg_data_sum <- gg_data %>%
+                group_by(Group) %>%
+                dplyr::summarize(mean_log_2_Ratio = mean(l2Ratio, na.rm = TRUE),
+                std = sqrt(var(l2Ratio, na.rm = TRUE)),
+                se = (sqrt(var(l2Ratio, na.rm = TRUE))/length(na.exclude(l2Ratio))),
+                ci = qt(0.975, n()-1) * se
+              )
+        
+
+barPl <- (ggplot(aes(x = Group, y = mean_log_2_Ratio,
+                 fill = Group), data = gg_data_sum)
+          + ggtitle(paste("WT vs mutants"))
+          + geom_bar(stat = "identity")
+          + scale_fill_manual(values = colPalette)
+          +  geom_errorbar(aes(ymin = mean_log_2_Ratio + ci, 
+                      ymax = mean_log_2_Ratio - ci),
+                      width=.4,                   
+                      position=position_dodge(.9)))
+
+barPl + theme(axis.ticks.length = unit(10, "points"),
+               axis.title = element_text(size = 16),
+              axis.text = element_text(size = 12),
+              plot.title = element_text(size = 16))
+ 
+
+
+
+```
+
+## Scatterplot of small data
+
+The main issue with bar charts is that these display only summary statistics; 
+the raw data and its distribution are invisible. This can 
+distort both interpretation and presentation of data, 
+because very different data sets can generate the exact same bar chart. 
+Moreover, as bar charts are based on summary statistics, they hide outliers, 
+bimodality and unequal sample sizes. Summary statistics should therefore only 
+be displayed when there is enough data to summarize. Otherwise, it is better to
+simply show the raw data. Nonetheless, 
+data summaries can serve as a valuable visual guide if these are combined 
+with the raw data.
+
+This is illustrated by the one--dimensional scatterplot of the same data shown below.
+It combines raw data as individual dots with a transparent bar to represent the mean. 
+The height of the bar allows the reader to immediately see that the mutants 
+show a reduced recombination rate. In addition, the source data tell us that
+the within--group variability of the data is approximately the same across 
+groups and that the data distribution is symmetric. Both aspects would be 
+hard to deduce from the bar chart. The addition of source data 
+allows the display of more information in the same amount of space.
+Another advantage of a scatterplot is that additional error bars 
+are not needed as the data variability can be inferred directly from the plot itself.
+
+```{r scatterChart, dependson="barChart"}
+
+
+scatterP <- (ggplot(aes(x = Group, y = l2Ratio,
+                 color = Group, fill = Group), data = gg_data )
+          + ggtitle(paste("WT vs mutants"))
+          + geom_point(aes(shape = repNo, group = Group), size = 2)
+          + scale_color_manual(values = colPalette) 
+          + stat_summary(fun.y = mean, geom = "bar", alpha = 0.1)
+          + scale_fill_manual(values = colPalette))
+
+scatterP + theme(axis.ticks.length = unit(10, "points"),
+               axis.title = element_text(size = 16),
+              axis.text = element_text(size = 12),
+              plot.title = element_text(size = 16))
+
+
+```
+
+
+
+## Plot a large data set
+
+A scatterplot is useful for displaying small datasets, but what about
+visualizing medium--sized ones (for instance, 20 replicates per group)? A slight
+modification in the ordinary scatterplot, the "beeswarm" plot, shows again
+individual values, but spaces data points with similar or identical values
+horizontally to separate them visually to avoid overplotting. 
+
+The larger number of 20 replicates also makes it possible to add graphical 
+representations of data variability. In general, variance is much harder 
+to estimate than the mean: With
+less than 10 samples per experimental group, it rarely makes sense to report a
+variance, since it will be very imprecise unless special shrinkage--type
+estimators are used. However, with 20 samples in each group, we can estimate the
+variability much more reliably. 
+
+The Figure shows different possibilities for
+presenting data in a beeswarm plot. In panel (A), the boxes show the 95
+confidence interval for the mean, based on the standard error of the mean (SEM),
+which indicates how much one can “trust” the estimated mean. Since the estimated
+mean value improves the more data we have, the standard error will converge
+toward zero as the sample size increases. For the initial dataset with only 3
+replicates per condition, the standard error for the WT group is 0.08, while it
+is about ten times lower in our 20--replicate dataset. The SEM is
+closely related to statistical testing since the statistic for a one--sided
+t--test essentially is mean/SEM. Therefore, presenting the SEM can be useful if
+for instance fold changes are plotted: It indicates whether a (log) fold change
+is significantly different from zero. On the other hand, formal statistical
+testing is often performed anyway, making the display of the standard error
+redundant. Thus, plots like those in panels (B–D) are usually more informative
+than summaries based on the SEM, as they show the actual variation in the data
+in various ways.
+
+
+```{r plotLargeData}
+
+largeData <- read_csv("largeData.csv")
+largeData$Group <- factor(largeData$Group, levels = largeData$Group)
+
+largeData <- map_df(largeData, function(col){
+   if (is_double(col)) col <- log2(col)
+   col
+   })
+
+gg_data_L <- gather(largeData, key = "repNo", value = "l2Ratio", Rep_1:Rep_20)
+
+```
+
+## Summary statistics for large data
+
+```{r, dependson="plotLargeData"}
+
+gg_data_sum_L  <- gg_data_L %>%
+                group_by(Group) %>%
+                dplyr::summarize(mean_log_2_Ratio = mean(l2Ratio, na.rm = TRUE),
+                std = sqrt(var(l2Ratio, na.rm = TRUE)),
+                se = std/length(na.exclude(l2Ratio)),
+                ci = qt(0.975, n()-1) * se
+                )
+
+gg_data_sum
+gg_data_sum_L
+```
+
+
+## Scatter plots for large data
+
+```{r boxplotLargeData, dependson="plotLargeData", fig.width = 25, fig.height= 15}
+bW <- min(abs(diff(na.exclude(gg_data_L$l2Ratio))))
+
+scatterPL <- (ggplot(aes(x = Group, y = l2Ratio,
+                 color = Group), data = gg_data_L )
+            + ggtitle(paste("WT vs mutants -- Standard error"))
+            + geom_beeswarm(cex=2, priority="ascending", size = I(2))
+            + scale_color_manual(values = colPalette) 
+            + geom_crossbar(stat= "summary", width = 0.4, size = 0.4, 
+                   show.legend = TRUE, 
+                   fun.data = fCI, aes(group = Group, color = Group)))
+
+
+
+scatterPLSD <- (ggplot(aes(x = Group, y = l2Ratio,
+                 color = Group), data = gg_data_L )
+              + ggtitle(paste("WT vs mutants -- Standard Deviation (SD)"))
+              + geom_beeswarm(cex=2, priority="ascending", size = I(2))
+              + scale_color_manual(values = colPalette) 
+              + geom_crossbar(stat= "summary", width = 0.4, size = 0.8, 
+                     show.legend = TRUE, fun.data = fSD, 
+                     aes(group = Group, color = Group)))
+
+
+
+scatterPLIQR <- (ggplot(aes(x = Group, y = l2Ratio,
+                 color = Group), data = gg_data_L )
+                + ggtitle(paste("WT vs mutants -- Inter Quartile Range (IQR)"))
+                + geom_beeswarm(cex=2, priority="ascending", size = I(2))
+                + scale_color_manual(values = colPalette)   
+                + geom_crossbar(stat= "summary", width = 0.4, size = 0.8, 
+                 show.legend = TRUE, fun.data = fIQR, 
+                 aes(group = Group, color = Group)))
+
+
+boxPL <- (ggplot(aes(x = Group, y = l2Ratio,
+                  color = Group), data = gg_data_L )
+           + ggtitle(paste("WT vs mutants -- boxplots"))
+           + geom_boxplot(alpha = 0.5)
+           + geom_beeswarm(cex=2, priority="ascending", size = I(2))
+          + scale_color_manual(values = colPalette))   
+     
+
+plot_grid(scatterPL, scatterPLSD, scatterPLIQR, boxPL,
+          labels = c("A", "B", "C", "D"), align = "h")
+```
+
+
+
+## Plotting even larger data
+
+
+Following the principle of plotting as much of the raw data as possible, the
+question is how we can extend this to larger datasets. A dot plot 
+is a good visualization technique for such cases. As the names suggests,
+it displays individual observations as a dot. In contrast to the beeswarm plot,
+it avoids overplotting by binning (instead of jittering) data points: Each
+individual data point is displayed, but points in the same bin are arranged
+horizontally. The dot size depends on the bin width: As the sample size
+increases, the dot size will decrease accordingly, which makes this tool
+suitable for very large datasets. Dot plots accurately reflect “gaps” and
+outliers in the data, which are often hidden in plots that are based on only
+summary statistics. An example for a sample size of 100 with overlaid boxplots
+is given below.
+
+
+
+```{r largerData}
+largerData <- read.csv("largerData.csv")
+
+largeData$Group <- factor(largerData$Group, levels = largerData$Group)
+
+largerData <- map_df(largerData, function(col){
+   if (is_double(col)) col <- log2(col)
+   col
+   })
+
+gg_data_LL <- gather(largerData, key = "repNo",
+                     value = "l2Ratio", Rep_1:Rep_100)
+
+```
+
+
+
+```{r beeswarmPlots, dependson="largerData"}
+
+
+dot_LL <- (ggplot(aes(x = Group, y = l2Ratio,
+                 color = Group), data = gg_data_LL )
+          + ggtitle(paste("Dot plot for 100 samples per condition"))
+          + scale_fill_manual(values = colPalette)
+          + scale_color_manual(values = colPalette)
+          + geom_dotplot(aes(fill = Group), binaxis = "y", 
+                       stackdir = "center", binwidth = 0.06, 
+                       stackratio = 0.9) 
+          + geom_boxplot(alpha = I(0.3)))
+
+dot_LL 
+
+
+```
+
+
+# Case study 2: Extracting information from strings
+
+
+R has some functions which can be useful for text manipulation. In data analysis
+you will often need to create compound strings out of existing ones or extract
+information from a string, e.g. a file name.
+
+Specifically, we will look at some of the capabilities
+of the  package `r CRANpkg("stringr"). Check out the documentation of this package
+for more string manipulation capabilities.
+
+
+## Extracting information from a string
+
+Lets assume we have the following image filename, which contains various information:
+the experimental series, the green color of a protein used and the glucose was used
+in the cell culture medium:
+
+```{r stringHandling}
+fName <- "tau138MGFP_Glu.lif - Series004 green_measure.tif"
+```
+
+
+In order to extract the information from the string, we need to split into
+several parts. This is done by defining a splitting pattern. Ideally, the
+parts of the string are separated by the same character. However, in our
+example this is not the case, we spaces, hyphens,  underscores and dots.
+
+Thus we have to use a so--called regular expression to split up the string.
+A thorough introduction to them is beyond the scope of this lab.
+A nice introduction to them can be found [here](http://www.zytrax.com/tech/web/regex.htm).
+
+They allow for a very flexible description of text patterns. For example, 
+the square brackets in the pattern "[ - \_ .]" tell R to select any of the three
+characters in within the brackets. This result of the splitting operation is
+a list that contains a vector for each string we splitted.
+
+```{r stringSplit, dependson="stringHandling"}
+f_name_split <- str_split(string=fName, pattern = "[ - _ .]")
+f_name_split
+```
+
+
+## Creating compound strings from input strings
+
+
+Now that we splitted the filename, we might wan to extract the information
+and create a new string. This is done with the functions `paste`
+and `paste0` which paste strings together with or without spaces.
+For example, we can create a new string containing the
+series, the color and medium condition, separated by double--hyphens.
+In order to do this, we supply the vector with the corresponding entries and set
+a character string to separate them with the `collapse` option.
+
+The first data example  contains .csv files with image feature readouts from a 
+Microscope. The image file
+names given  in the first column of the table contain information about the medium
+(glucose or galactose) and about the color of the protein (green or red).
+
+The goal is now to extract this information from the table in an automated
+fashion.
+
+```{r read_data_mic}
+cell_imaging <- read_csv("cellImaging.csv")
+head(cell_imaging)
+```
+
+
+__Exercise: Handling cell imaging data__
+
+ * Use the file names in the  column `Label` to extract the color
+(green or red) and the medium (Glu or Gal). HINT: Use an appropriate split--
+command and then use `map` with a custom function
+to extract the info!
+
+
+* Add  columns `gal_glu` and `green_red` with the function `mutate`
+  to the data frame that code for membership of the cell in each of the four
+  groups
+
+HINT: Use the function `str_match` on the file names and an `ifelse`
+statement. Be careful: `str_match` returns a matrix so subset the result
+accordingly.
+
+* Group the data by the columns `gal_glu` and
+`green_red` and
+then compute the mean `Mean` per group using `summarize`.
+
+__Solution:  Handling cell imaging data__
+
+```{r imagingDataSol,  dependson="read_data_mic",  echo = TRUE, results='hide'}
+
+label_Info <- str_split(string = cell_imaging$Label, pattern = "[ - _ .]")
+extracted_info <- map_df(label_Info,
+                        function(x){data.frame(series = x[5],
+                                               medium = x[2],
+                                               label = x[6])})
+
+head(extracted_info)
+
+## add columns to the data that give the categories
+
+cell_imaging <- mutate(cell_imaging, green_red = ifelse(is.na(str_match(Label, "green")[,1]),
+                                                   "Red", "Green"),
+                                     gal_glu = ifelse(is.na(str_match(Label, "Gal")[,1]),
+                                                      "Glu", "Gal"))
+## check variable types
+glimpse(cell_imaging)
+
+## group by category and get the mean
+cell_imaging %>%
+  group_by(green_red, gal_glu) %>%
+  dplyr::summarize(mean(Mean))
+
+```
+
+
+# Case study 3: High--throughput microscopy data
+
+In this tutorial, we will import a single plate from a high content screen performed
+on 96 well plates. The input data that we are going to use are class labels for 
+each single cell. These classification results have been obtained using a machine 
+learning algorithm based on the original image features. The data produced is similar
+to the one in @Neumann_2010: Each cell is classified into a mitotic phenotype class.
+
+
+## Annotation import
+
+We first import the annotation of the plate. This consists of table that informs
+us about the content of each well on the plate. A well can be transfected with an siRNA
+targeting a certain gene, it can be empty, contain scrambled siRNAs or negative
+controls.
+
+```{r import_annotation}
+plate_map <- read.xlsx(xlsxFile = file.path("plate_mapping.xlsx"))
+head(plate_map)
+```
+
+
+## Raw data import
+We will now import the raw data. This data was originally stored in a variant of the [HDF5 format](https://en.wikipedia.org/wiki/Hierarchical_Data_Format) called
+[CellH5](http://www.cellh5.org/),
+which defines a more restricted sub--format designed specifically to store data
+from high content screens. More information can be found in the paper by 
+@Sommer_2013.
+
+
+Here, we import the data in convenient format: We have the data summarized across
+time points, where each column corresponds to a well and each row to a phenotypic
+class.
+
+This is a typical example of a "wide" data table, where the variables 
+contained in the data set spread across multiple columns. 
+
+```{r import_data_table, eval=TRUE}
+load("raw_data.RData")
+```
+
+
+## Reshaping the screen data and joining the plate annotation
+
+We now reshape the input data, which is in a long format into a wide format.
+For this, we first turn the row names into an explicit column and then "gather"
+all the columns representing wells. This will turn all the columns that contain
+the per--well data into a single "measurement" column that is 
+paired with a "key"" column containing the well identifiers.
+
+The result is a "long" data table, which contains one observation per row: in our 
+case the number of times a cell was assigned to a specific class in every single
+well. Class in combination with well serves as our "key" here, and the class--count
+is the associated value.
+
+We now want to join the annotation to this data table in the long format. Before
+we can do this, however, we need to solve a subtle problem: Our well identifiers
+in the imported data are different from the identifiers in the annotation table
+so we cannot easily join the two tables together. 
+
+We first need to strip the lead "W" from the well identifiers and replace the 
+"P1" suffix by a "01" suffix. We do this by using a regular expression. Regular
+expressions are a powerful tool for the handling of strings and one can find
+a nice tutorial about them [here](http://www.zytrax.com/tech/web/regex.htm).
+
+We can now join the annotation to our long table and use the well as the joining
+key.
+
+```{r reshape, dependson="import_data_table"}
+tidy_raw_data  <- rownames_to_column(as.data.frame(raw_data), var = "class") %>%
+                  gather(key = "well", value = "count",-class)
+
+sample_n(tidy_raw_data, 6)
+
+tidy_raw_data$well <- str_replace(tidy_raw_data$well, "^W([A-H][0-9]{2})_P1", "\\1_01")
+
+#join annotation
+
+input_data <- left_join(tidy_raw_data, plate_map, by = c("well" = "Position"))
+
+sample_n(input_data, 6)
+```
+
+
+## Using ggplot to create a PCA plot for the data
+The data we have lives in a ten dimensional space, as every well contains
+cells classified into one of ten different classes. In order to produce a succinct
+overview of the data, one tries to reduce the dimensionality of the data.
+A popular way to do this is to compute new, artificial, variables that 
+are a weighted sum of the original variables. The weights are obtained in
+such a way that the variables are independent of each other and retain
+as much of the original variability (a proxy of information content) as
+possible. These new variables are called "principal components" (PCs) of the data. 
+
+Before we can compute the PCs, we have to make sure that the variables that
+we have obtained for every single well are normalized. As our data consists
+of the number of cells in each phenotypic category, a straightforward normalization 
+consists of transforming the counts into percentages by dividing the data
+for each well by its total number of cells.
+
+
+## Grouping, summarizing and data transformation
+
+In the code chunk below, we  use the `group_by()` function 
+to plot the  dataset into groups according to the well ID. 
+We then apply the function `sum()` to the counts of each well and
+use `summarize()` to obtain a table of counts per well. This is an example
+of a __split--apply--combine__ strategy.
+
+
+We can now join the table containing the sums to the original
+data and compute compute percentage using the sums.
+
+As PCA works best on data that is on normal distribution (z--score) scale,
+we perform a [logit](https://en.wikipedia.org/wiki/Logit) transformation 
+to turn the percentages
+into z--scores. This is similar in spirit to a log transformation on
+intensity values.
+
+
+```{r grouping_and_summarizing, dependson="reshape"}
+
+no_cells_per_well <- input_data %>%
+                     group_by(well) %>%
+                     dplyr::summarize(no_cells = sum(count))
+
+head(no_cells_per_well)
+
+data_with_sums <-  left_join(input_data, no_cells_per_well)
+
+data_for_PCA <- mutate(data_with_sums, perc = count / no_cells, 
+                       z_score = logit(perc))
+
+head(data_for_PCA)
+```
+
+Here, we use the chaining/piping operator `%>%` to "pipe" the result of a 
+computation into the next. This leads to more digestible code compared to e.g. loops. 
+
+### Creating the PCA plot
+
+We are now ready to create the PCA plot. For this, we first need to turn
+the input data into a wide data frame again by spreading the z--scores across
+columns.
+
+We can then use the function `prcomp()` to compute the actual principal components.
+We also create a vector genes, giving us the gene each of our siRNAs is targeting.
+
+We then create a ggplot object by mapping the first principal component to the 
+x-- and the second one to the y--axis. We use the gene names as plotting symbols
+and  color the names according to to the gene name (As we have multiple empty wells
+as well as multiple siRNAs targeting the same gene).
+
+Furthermore, we specify that the aspect ratio of x and y axis should be equal to 
+the ratio of the variance explained by PC1 to the variance explained by PC2 so
+that the axes represent the same units. This facilitates a correct interpretation 
+of the PCA plot: PC1 has more variance than PC2, so the x--axis should 
+be longer than the y--axis to reflect the differences in scale.
+
+
+```{r PCA, dependson="grouping_and_summarizing"}
+data_for_PCA <- data_for_PCA %>% 
+                dplyr::select(class, well, z_score) %>%
+                spread(key = class, value = z_score)
+
+PCA <- prcomp(data_for_PCA[, -1], center = TRUE, scale. = TRUE)
+
+
+genes <- input_data %>%
+         group_by(well) %>%
+          dplyr::summarize(gene = unique(Gene.Symbol))
+
+genes <- ifelse(is.na(genes$gene), "empty", genes$gene)
+
+dataGG = data.frame(PC1 = PCA$x[,1], PC2 = PCA$x[,2],
+                    PC3 = PCA$x[,3], PC4 = PCA$x[,4],
+                    genes)
+
+pl <- (ggplot(dataGG, aes(x = PC1, y = PC2, color =  genes))
+      + geom_text(aes(label = genes), size = I(2))
+      + coord_fixed(ratio = (PCA$sdev^2)[2] / (PCA$sdev^2)[1])
+      + ggtitle("Principal components plot")
+      )
+
+pl
+```
+
+We can see, for example, that the control wells cluster together. Note that it is easy to turn
+this plot into an interactive version using `ggplotly` from the `r CRANpkg("plotly")`.
+
+```{r plotly, eval=FALSE, fig.width= 4.5, dependson="PCA"}
+if(!("plotly" %in% installed.packages()[,1])){
+  install.packages("plotly")
+}
+
+library(plotly)
+ggplotly(pl)
+```
+
+### Variable importance for the principal components
+The first PC nicely separates wells containing various controls from the ones
+treated with siRNAs. As every component is simply a weighted sum of the original 
+variables, we can inspect these weights (called "loadings") to see which classes
+"drive" the components and try to interpret what we find.
+
+```{r var_imp, dependson="PCA"}
+loadings <- PCA$rotation[, 1:2]
+loadings_gg <- loadings %>%
+               as.data.frame() %>%
+               rownames_to_column(var = "class") %>%
+               dplyr::select(class, PC1, PC2) %>%
+               gather( key = "comp", value = "loading", PC1:PC2)
+  
+ggplot(loadings_gg, aes(x = class, y = loading, fill = class)) +
+      facet_wrap( ~ comp) +
+      geom_bar(stat = "identity", position = "identity") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_fill_brewer(type = "qual", palette = "Set3") 
+
+```
+
+We can see that e.g. the "inter" and the "map/prometa" classes as well as the "apo"
+class are important for PC1. The map and prometa classes combined
+define cells that are in mitotic delay/arrest, while the interphase class defines
+a control category.
+
+So a possible explanation for PC1 would be that it separates
+wells with cells in mitotic arrest/delay (or apoptotic cells) from control 
+wells with many cells in the interphase phase (c.f. Figure 1 of @Neumann_2010).
+
+The second principal component seems to separate wells that contain mainly
+cells in ana--/metaphase from wells that predominantly contains cells with
+strange shape phenotypes.
+
+### Correlation circles and PCs for hit calling
+
+The loadings are closely related (up to a scaling factor) 
+to the correlation of the original variables with the computed principal components.
+We can investigate this relationship by plotting the correlations of the original
+variables with the components in a circle. 
+
+```{r co_circle, dependson="var_imp"}
+fviz_pca_var(PCA, col.circle="black", title="Correlation Circle for the PCA") + coord_equal() 
+```
+We see that "apo", "artifact", "map" and "meta" are highly positively correlated 
+with  PC1, while "inter" is strongly negatively correlated with PC1, confirming 
+that PC1 identifies wells were there is a large proportion of cells which are 
+stuck in mitosis or undergoing apoptosis.
+
+PC2 is positively correlated with the strange phenotypes. Thus, we could potentially
+use the first and second PC to call hits. For example, PLK1, which is very far
+from the controls in PC1 coordinates is known to be important during the M--phase
+of the cell cycle. Thus, if this gene is inhibited, the mitosis does not work 
+properly any more and the cells are stuck in the cell cycle or undergo  apoptosis. 
+
+## Plate heatmap of apoptosis proportions
+
+Heatmaps are a powerful of visualizing large, matrix--like datasets and giving a quick
+overview over the patterns that might be in there. There are a number of heatmap drawing
+functions in R; one that is convenient and produces good--looking output is the function
+`pheatmap` from the eponymous package. 
+
+However, here we will use ggplot to create the heatmap. We first join all the
+well IDs to the data, so that we can plot missing values in a uniform fashion.
+
+Then we extract the row (letters) and column (numbers) from the well ID and
+finally map the rows to the y--axis, the columns to the x--axis and the color
+fill to the percentage values for apoptosis
+
+The heatmap plot shows that well D08 contains a high percentage of apoptotic
+cells compared to the other wells.
+
+```{r heatmap_apoptosis}
+
+dat_rows <- toupper(letters[1:8])
+dat_cols <- c(paste0("0",seq(1:9)),seq(10,12))
+wells <- data.frame( well = paste0(outer(dat_rows, dat_cols, paste0), "_01"), 
+                     stringsAsFactors = FALSE)
+
+data_for_heatmap <- arrange(full_join(data_for_PCA, wells), well) %>%
+                    dplyr::select(well, apo) %>%
+                    tidyr::extract(well, into = c("row", "column"), 
+                            regex = "([A-Z])([0-9]{2})", remove = FALSE) %>%
+                    mutate(perc_apoptosis = logistic(apo)) %>%
+                    mutate(row = factor(row, 
+                           levels = sort(unique(row), decreasing = TRUE)))
+
+theme_set(theme_bw())       
+heatmap <- (ggplot(data_for_heatmap, aes(column, row))
+          + geom_tile(aes(fill = perc_apoptosis))
+          + scale_fill_distiller(type = "seq", palette = "RdYlBu"))
+
+heatmap
+```
+
+
+## Background information
+
+### Principal component analysis (PCA) to for data visualization
+
+PCA is primarily an exploratory technique which produces
+maps that show the relations between the variables and between observations in a
+useful way. It proceeds by computing principal components of the original data, 
+which are _linear combinations_ of the variables originally measured.
+
+To understand what a linear combination
+really is, we can take an analogy, when making a healthy juice
+mix, you can follow a recipe.
+
+![Juice](Vegetable-Juice.jpg)
+![Recipe](RecipeVeggie.jpg)
+
+$$
+V=2\times \mbox{ Beets }+ 1\times \mbox{Carrots } +\frac{1}{2} \mbox{ Gala}+ \frac{1}{2} \mbox{ GrannySmith}
++0.02\times \mbox{ Ginger} +0.25 \mbox{ Lemon }
+$$
+This recipe is a linear combination of individual juice types (the
+original
+variables). The result is a new variable $V$, the coefficients
+$(2,1,\frac{1}{2},\frac{1}{2},0.02,0.25)$
+ are called the _loadings_.
+ 
+A linear combination of variables defines a line in higher dimensions in the same way
+as e.g. a simple linear regression defines a line in the scatterplot plane of two dimensions. 
+
+There are many ways to choose lines onto which we project the data. 
+PCA chooses the line in such a way that the distance of the data points
+to the line is minimized, and the variance of the orthogonal projections 
+of the data points along the line is maximized.
+
+Spreading points out to maximize the variance of the projected points will show
+more 'information'. 
+
+For computing multiple axes, PCA finds the axis showing the largest variability,
+removing the variability in that direction and then iterating to find 
+the next best orthogonal axis so on. 
+
+# Session information
+
+```{r seesionInfo, results='markup'}
+sessionInfo()
+```
+
+
+# References
+
+

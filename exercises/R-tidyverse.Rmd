@@ -1,0 +1,708 @@
+---
+title: "An introduction to tidyverse"
+author: "Jonathan Landry"
+date: "`r doc_date()`"
+output: 
+    BiocStyle::html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        code_folding: show
+    BiocStyle::pdf_document:
+        toc: true
+        highlight: tango
+---
+
+
+<!--
+To compile this document
+graphics.off();rm(list=ls());rmarkdown::render('R-lab.Rmd');purl('R-lab.Rmd')
+pdf document
+rmarkdown::render('R-lab.Rmd', BiocStyle::pdf_document2())
+-->
+
+```{r options, include=FALSE}
+library(knitr)
+options(digits = 3, width = 80)
+opts_chunk$set(echo = TRUE, tidy = FALSE, include = TRUE,
+               dev = 'png', fig.width = 6, fig.height = 3.5, 
+               comment = '  ', dpi = 300,
+cache = TRUE)
+```
+
+This tutorial has been greatly inspired from Bernd Klaus materials. Many thanks for sharing.
+
+
+# Required packages and other preparations
+
+```{r required_packages, echo = FALSE, warning=FALSE, message=FALSE, results="hide"}
+suppressPackageStartupMessages({
+library("TeachingDemos")
+library("openxlsx")
+library("multtest")
+library("Biobase")
+library("tidyverse")
+library("cowplot")
+})
+```
+
+```{r required packages and data, echo = TRUE, message=FALSE, warning=FALSE}
+library("TeachingDemos")
+library("openxlsx")
+library("multtest")
+library("Biobase")
+library("tidyverse")
+library("cowplot")
+```
+
+
+# Classes, modes and types of objects
+R is an object-oriented language, so every data item is an object in R.
+As in other programming languages, objects are instances of "blue-prints" called classes.
+There are the following elementary types or ("modes"): 
+
+* numeric: real number
+* character: chain of characters, text
+* factor: categorical data that takes a fixed set of values
+* logical: TRUE, FALSE
+* special values:  NA (missing value), NULL ("empty object"),
+ Inf,  -Inf (infinity), NaN (not a number) 
+ 
+We haven't met factors yet: They are designed to represent categorical data that 
+can take a fixed set of possible values. Factors are built on top of integers, 
+and have a levels attribute:
+
+```{r factors}
+
+x <- factor(c("ab", "cd", "ab"), levels = c("ab", "cd", "ef"))
+x
+
+```
+
+
+Data storage types includes matrices, lists, data frames (tibbles), which will be introduced
+in the next section. Certain types can have different subtypes, e.g. numeric
+can be further subdivided into the integer, single and double types. Types
+can be checked by the `is.*` and changed ("casted") by the 
+`as.*` functions. Furthermore, the function
+`str` is very useful in order to obtain an overview of an (possibly
+complex) object at hand. The following examples will make this clear.
+We first assign the value `9` to an object and then perform various operations on it. 
+
+
+```{r object-examples,   echo = TRUE}
+a <- 9
+# is a a string?
+is.character(a) 
+# is a a number?
+is.numeric(a) 
+# What's its type?
+typeof(a)
+# now turn it into a factor
+a <- as.factor(a)
+# Is it a factor?
+is.factor(a)
+# assign an string to a: 
+a <- "NAME"
+# what's a?
+class(a)
+str(a) 
+```
+
+
+# Matrices, lists,  data frames and basic data handling
+
+## Matrices
+
+Matrices are two--dimensional vectors and 
+can be created in R  in a variety of ways. Perhaps the simplest is to create the columns
+and then glue them together with the command `cbind`. For example:
+
+
+```{r cbind-ex,   echo = TRUE}
+x <- c(5, 7 , 9)
+y <- c(6, 3 , 4)
+z <- cbind(x, y)
+z
+dim(z)
+```
+
+We can also use the function `matrix()` directly to create a matrix.
+```{r matrix_direct,   echo = TRUE}
+z <- matrix(c(5, 7, 9, 6, 3, 4), nrow = 3)
+```
+
+There is a similar command, `rbind`, for building matrices by
+gluing rows together.
+The functions `cbind` and `rbind` can also be applied to matrices themselves 
+(provided the dimensions match) to form larger matrices.
+
+Notice that the dimension of the matrix is  determined
+by the size of the vector and the requirement that the number of 
+rows is 3 in the example above, as specified by the
+argument `nrow = 3`. As an alternative we could have specified the number of columns with the
+argument `ncol = 2` (obviously, it is unnecessary to give both). Notice that the matrix is "filled up"
+column-wise. If instead you wish to fill up row-wise, add the option `byrow=TRUE`. 
+ 
+
+```{r Matrix-ex,   echo = TRUE}
+z <- matrix(c(5, 7 , 9 , 6 , 3 , 4), nrow = 3, byrow = TRUE)
+z
+```
+
+R will try to interpret operations on matrices in a natural way. 
+For example, with z as above, and y defined below we get:
+
+```{r Matrix-op,   echo = TRUE}
+y <- matrix(c(1, 3, 0, 9, 5, -1), nrow = 3, byrow = TRUE)
+y
+y + z
+y * z
+```
+
+Notice that multiplication here is component--wise.
+As with vectors it is useful to be able to extract sub-components of matrices. In this case, we
+may wish to pick out individual elements, rows or columns. As before, the `[ ]` 
+notation is used to subscript. The following examples illustrate this:
+
+```{r Matrix-op-4,   echo = TRUE}
+z[1, 1]
+z[, 2]
+z[1:2, ]
+z[-1, ]
+z[-c(1, 2), ]
+```
+
+
+So, in particular, it is necessary to specify which rows and columns are required, 
+whilst omitting the index for either dimension implies that every element 
+in that dimension is selected.
+
+
+
+## Data frames (tibbles) and lists
+
+
+A data frame is  a matrix where the columns can have different data types.
+As such, it is usually used to represent a whole data set, where the rows
+represent the samples and columns the variables. Essentially, you can think
+of a data frame as an excel table.
+
+Here, we will meet the first tidyverse member, namely the `r CRANpkg("tibble") ` 
+package, which improves the conventional R `data.frame` class. A tibble
+is a `data.frame` which a lot of tweaks and more sensible defaults that make your
+life easier. For details on the tweaks, see  the help on tibble: `?tibble`
+so that you never have to use a standard data frame anymore.
+
+Let's illustrate this by the small data set
+saved in comma--separated-format (csv) ---
+`patients`. We load it in from a website using the function
+`read_csv`, which is used to import a data file in 
+*comma separated format --- csv* into R. In a .csv--file the data 
+are stored row--wise, and the entries in each row are separated by commas. 
+
+The function `read_csv` is from the `r CRANpkg("readr")` package and will
+give us a tibble as the result. The function `glimpse()` gives a nice summary
+of a tibble.
+
+It has weight, height and gender of three people. 
+We can also use the function `read.xlsx` from the `r CRANpkg("opnxlsx")` 
+package to import the  data from an excel sheet. Here, we have to use the
+function `as_tibble` to turn the data.frame into an equivalent tibble.
+
+```{r load-Patients-excel,   echo = TRUE}
+pat <- as_tibble(read.xlsx("Patients.xlsx"))
+pat
+glimpse(pat)
+str(pat)
+```
+
+## Accessing data in data frames
+
+Now that we have imported the small data set, you might be wondering how to 
+actually access the data. For this the functions `filter` and `select` from
+the `r CRANpkg("dplyr")` package of the `r CRANpkg("tidyverse")` are useful. 
+`filter` will select  certain rows (observations),
+while `select` will subset the columns (variables of the data). In the following
+command, we get all the patients that are less tall than 1.5 and select their Height and
+Gender as well as their Id:
+
+```{r subset_data}
+pat_tiny <- filter(pat, Height < 1.7)
+select(pat_tiny, PatientId,  Height, Gender)
+```
+
+There are a couple of operators useful for comparisons:
+
+*  `Variable == value`: equal
+*  `Variable != value`: un--equal
+*  `Variable < value`: less
+*  `Variable > value`: greater
+*  `&: and`
+*  `|` or
+*  `!`: negation
+*  `%in%`: is element?
+
+The function `filter` allows us to combine multiple conditions easily, 
+if you specify multiple of them, they will automatically concatenated via a `&`.
+For example, we can easily get light and female patients via:
+
+
+```{r light_and_small_patients,   echo = TRUE}
+filter(pat, Height < 1.5, Gender == "f")
+```
+We can also retrieve small OR female patients via
+
+```{r light_or_small_patients,   echo = TRUE}
+filter(pat, (Height < 1.5) | (Gender == "f"))
+```
+
+## Vectors with arbitrary contents: Lists
+
+Lists can be viewed as vectors that contain not only elementary objects such 
+as number or strings but can potentially arbitrary objects. The following example
+will make this clear. The list that we create contains a number, two vectors
+and a string that is itself part of a list.
+
+
+```{r list_example,   echo = TRUE}
+L <- list(one = 1, two = c(1, 2), five = seq(1, 4, length = 5), 
+          list(string = "Hello World"))
+L
+```
+
+Lists are the most general data type in R. In fact, data frames (tibbles) are
+lists with elements of equal lengths. List elements can either be accessed by 
+their name using the dollar sign `$` or via their position via a double 
+bracket operator `[[]]`.
+
+```{r list_access,   echo = TRUE}
+names(L)
+L$five + 10
+L[[3]] + 10
+```
+
+Using only a single bracket (`[]`) will extract a sublist, so the result will
+always be a list, while the dollar sign `$` or the double bracket operator
+`[[]]` removes a level of the list hierarchy. Thus, in order to access the 
+string, we would first have to extract the sublist containing the string from `L`
+and then get the actual string from the sublist, `[[` drills down into the list 
+while `[` returns a new, smaller list. 
+
+```{r}
+L[[4]]$string
+L[2]
+```
+
+Since data frames are just a special kind of lists, 
+they can actually be accessed in the same way.
+
+```{r list-example_df,   echo = TRUE}
+pat$Height
+pat[[2]]
+pat[["Gender"]]
+```
+
+More on lists can be found in the respective chapter of "R for data science"
+[here](http://r4ds.had.co.nz/vectors.html#lists).
+
+## Applying a function to elements of a data structure
+
+R encourages the use of functions for programming. Instead of e.g. looping through
+a vector or data frame, you can use specialized functions that apply another function 
+to each element of your data. These kinds of functions are called apply functions. 
+Here, we will use the `map` family
+of functions from the `r CRANpkg("purrr")` package instead of the base R functions.
+An apply / map call applies a function to a vector or list and returns the result in
+another vector/list. Thus, each step consists of "mapping" a list value to a result. 
+
+We will introduce the `map` functions  by looking at a typical data set in a tabular
+format, where the rows represent the samples and the columns the variables measured. The
+data set `bodyfat` contains various body measures for 252 men. We turn
+it into a tibble by using the function `as_tibble()`.
+
+Let's inspect it a bit. The first thing we notice
+is that tibbles prints only the first 10 rows by default. Tibbles are designed 
+so that you don’t accidentally overwhelm your console when you print large data
+frames. Additionally, we get a nice summary of the variables available in our
+data set.
+
+```{r loadBodyfat,   echo = TRUE}
+load("bodyfat.rda")
+bodyfat <- as_tibble(bodyfat)
+bodyfat
+```
+
+As data frames are just a special kind of list, namely a list that is composed of
+vectors of equal length, we can use a map function to compute the mean value for every
+variable in our data set.
+
+```{r bodyfat_map, dependson = "loadBodyfat"}
+head(map_dbl(bodyfat, mean))
+```
+
+Here we use map_dbl, to ensure that we get a double value back. There 
+are specialized mapping functions for many data types, but you can always
+use the default  `map()` function  as a fallback when there is no specialized
+equivalent available.
+
+The map functions are really useful for applying your custom functions, for example
+we can compute a robust z--score by subtracting the median and dividing by the mean
+absolute deviation for each variable. 
+
+This will bring all the variables in the data set to a common scale and make 
+them directly comparable. These kinds of transformations are often performed 
+before clustering or dimensionality reduction.
+
+You can create your own functions very easily by adhering to the following
+template:
+
+```{r function_template, eval=FALSE}
+function_name <- function(argument_1, argument_2, 
+                          optional_argument = defautl_value ) 
+{
+  return(...)
+}
+```
+
+As you can see, the source code of the  function has to be in curly brackets, while
+the arguments are defined in the parantheses. Arguments without a default value 
+are mandatory, and default value are specified by equality signs.
+
+By default R returns the result of the last computation performed within the 
+curly brackets  (often, this will be the last line of the function). However, 
+you can always specify the return  value directly with `return()`. If 
+you want to return multiple values, you can return a list.
+
+We can now easily define our function and apply it to the data set.
+
+```{r robust_z}
+robust_z <- function(x){
+  (x - median(x)) / mad(x)
+}
+
+head(map_df(bodyfat, robust_z), 3)
+
+```
+
+Here, we used the function `map_df` to make sure that we get a data frame back.
+There is an even simpler way to achieve the same goal. Using a tilde (~) to create
+an R formula, the map
+functions allow you to define anonymous functions with a default argument `.x`.
+
+With this, we do not need to define our robust z--score function explicitly.
+
+```{r robust_z_implicit}
+head(map_df(bodyfat, ~  (.x - median(.x)) / mad(.x)), 3)
+```
+
+## Computing variables from existing ones and predicate functions
+
+Often, we want to use variables stored in our data set to compute derived quanities.
+For example, we might be interest in the weight in kilograms instead of pounds
+and the hight in meters instead of inches. The function `mutate` allows us to
+do this.
+
+```{r transform_example}
+pb_to_kg <- 1/2.2046
+inch_to_m <- 0.0254
+
+bodyfat <- mutate(bodyfat, height_m = height * inch_to_m,  
+                           weight_kg = weight * pb_to_kg)
+
+select(bodyfat, height,  height_m, weight, weight_kg)
+```
+
+We often want to apply our function only to variables in the data set that are 
+of a specific type, e.g. numeric, we kann use simple predicate functions that
+return `TRUE` or `FALSE` in combination with `discard` or `keep` to perform 
+appropriate selections. For example, we can exclude the id column of the patients
+data set, before computing the variable--wise means.
+
+```{r predicate_functions}
+keep(pat, is_double)
+map_dbl(discard(pat, is_character), mean, na.rm = TRUE)
+```
+
+Note that we specified `na.rm = TRUE` as an additional argument to the map function.
+This will be directly passed on to the argument list of `mean` and excludes any
+missing values before computing the means.
+
+### Exercise: Handling a small data set
+
+* Import the data set `Patients.csv` from the website  
+* Which variables are stored in the data frame and what are their values?
+* Is there a missing weight value?  If yes, replace it by the mean of the other weight values.
+* Calculate the mean weight and height of all the patients.  
+* Calculate the `BMI = Weight / Height^2`  of all the patients.
+
+
+# Simple plotting in R: qplot of `r CRANpkg("ggplot2")`
+
+The package `r CRANpkg("ggplot2")` allows very flexible plotting in R, 
+but takes a while to get acquainted with the underlying grammer 
+of graphics. Thus, we will use its function  `qplot()` for "quick plotting",
+which requires no knowledge of the underlying advanced features and behaves
+much like R's default `plot` function. 
+However, it offers advanced options like facetting or coloring by condition 
+as well.
+
+
+```{r qplot, eval=FALSE}
+qplot(x, y = NULL, ..., data, facets = NULL, 
+  NA), ylim = c(NA, NA), log = "", main = NULL,
+  xlab = , ylab = )
+
+```
+
+The arguments are:
+
+* `x:` x--axis data
+* `y:` y--axis data (may be missing)
+* `data:`  `data.frame` containing the variables used in the plot 
+* `facets ` split the plot into facets, use a formula like
+. ~split to do wrapped splitting and row ~ columns to split by rows and columns
+* `main:` plot heading
+* `color, fill` set to factor/string in the data set in order to
+color the plot depending on that factor. Use `I("colorname")` to use a
+specific color.
+* `geom` specify a "geometry" to be used in the plots, examples
+include point, line, boxplot, histogram etc.
+* `xlab, ylab, xlim, ylim` set the x--/y--axis parameters
+
+
+As an example, we create a plot of `perc.fat` against abdomen circumference and
+color it by weight. For this we bin the weight vector into 5 discrete categories
+using the `cut` function.
+
+```{r qplot_example}
+bodyfat <- mutate(bodyfat, weight_binned = cut(weight_kg, 5))
+
+qplot(abdomen.circum, percent.fat, 
+      color = weight_binned, data = bodyfat) 
+
+```
+
+We can (unsurprisingly) see that abdomen circumference, weight and bodyfat are highly 
+correlated to each other. We can also produce a facetted plot split by weight.
+
+```{r qplot_example_facets}
+
+qplot(abdomen.circum, percent.fat, 
+      color = weight_binned, data = bodyfat, 
+      facets = ~weight_binned) 
+
+```
+
+
+### Exercise: Plotting the EMBL logo
+
+
+The code below plots the embl logo.  The plus sign adds additional 
+"layers" to the ggplot object modifying any given plot and we use it here
+to make the axes dissapear.
+
+However the colors are not quite right. Can you fix that?
+Check out the [ggplot2 docs](http://docs.ggplot2.org/) or try googeling!
+
+```{r embl_logo, results='hide'}
+
+load("hex_grid.Rdata")
+embl_colors <- c("#E33E3E", "#73B360")
+qplot(x, y, data = hex_grid, color = lab, asp = 1) +
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.text = element_blank(),
+          line = element_blank(),
+          title = element_blank())+
+    scale_color_manual(values=embl_colors)
+
+```
+
+# Programming statements
+
+R offers the typical options for flow--control known from many other
+languages. 
+
+The most important one, the **if--statement** is used when certain computations should
+only be performed if a certain condition is met (and maybe something else should be performed
+when the condition is not met):
+
+
+```{r if_example,   echo = TRUE, eval = TRUE}
+w <- 3
+  if (w < 5) {
+      d <- 2
+    } else {
+      d <- 10
+    }
+d
+```
+
+
+If you want perfom a computation for every entry of a list,
+ you usually do  the computations for one time step and then for
+the next and the next, etc. Because nobody wants 
+to type the same commands over and over again,
+these computations are automated in  __for--loops__.
+
+```{r for_example,   echo = TRUE, eval = TRUE}
+h <- seq(from = 1, to = 8)
+s <- numeric() # create empty  vector
+    for (i in 1:8)
+    {
+    s[i] <- h[i] * 10
+    }
+s
+```
+
+Note however, that you should typically resort to `map` function for this 
+purpose as this leads to more readable code:
+
+```{r maps_for}
+map_dbl(h, ~.x*10)
+```
+
+
+Another useful command is the __ifelse__--command, it replaces 
+elements of a vector based on the evaluation of
+another logical vector of the same size. This is useful to replace missing
+values, or to binarize a vector.
+
+```{r ifelse-example,   echo = TRUE, eval = TRUE}
+s <- seq(from = 1, to = 10)
+binary_s <- ifelse(s > 5, "high", "low")
+binary_s
+```
+
+
+## Exercise: Base calling errors
+
+The function `readError(noBases)`  simulates the base calling 
+  errors of a sequencing machine. The parameter
+ \texttt{noBases}  represents the  number of positions in the genome sequenced
+ and the function will return a vector, which has the entry "error" if a base 
+ calling error occurs at a certain position and "correct" if  the base is 
+ read correctly. It can be obtained with the command 
+
+` source("readError.R")`
+
+* Let the sequencer read a thousand positions and try to infer a base calling 
+error rate from this simulation
+HINT: The functions  `table`  and `prop.table` could be handy for this!
+* Let us assume the technology improves and the machine is less prone to  errors.
+Change the function accordingly!
+
+# Answers to exercises
+
+__Exercise: Handling a small data set__
+
+* Import the data set `Patients.csv` from local directory 
+* Which variables are stored in the data frame and what are their values?
+* Is there a missing weight value?  If yes, replace it by the mean of the other weight values.
+* Calculate the mean weight and height of all the patients.  
+* Calculate the `BMI = Weight / Height^2`  of all the patients.
+
+
+__Solution: Handling a small data set__
+
+```{r apply-test,   echo = TRUE, results = 'hide', message=FALSE}
+pat <- read_csv("Patients.csv")
+pat
+
+map_dbl(keep(pat, is_double), mean)
+
+pat$Weight[2] <- mean(pat$Weight, na.rm = TRUE)
+pat
+
+pat <- mutate(pat, BMI = Weight / Height^2)
+```
+
+
+__Exercise: Plotting the EMBL logo__
+
+The code below plots the embl logo. Note that the plus sign adds additional 
+layers to the ggplot object. This allows you to modify any given plot.
+However the colors are not quite right. Can you fix that?
+Check out the [ggplot2 docs](http://docs.ggplot2.org/) or try googeling!
+
+```{r embl_logo_ex, results='hide'}
+
+load("hex_grid.Rdata")
+embl_colors <- c("#E2001A", "#6FAA46")
+qplot(x, y, data = hex_grid, color = lab, asp = 1) +
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.text = element_blank(),
+          line = element_blank(),
+          title = element_blank())
+
+```
+
+__Solution: Plotting the EMBL logo__
+
+```{r sol_embl_logo, results='hide', fig.keep='none'}
+
+load("hex_grid.Rdata")
+embl_colors <- c("#E2001A", "#6FAA46")
+ 
+qplot(x, y, data = hex_grid, color = lab, asp = 1) +
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.text = element_blank(),
+          line = element_blank(),
+          title = element_blank()) +
+    scale_colour_manual(values = embl_colors )
+
+```
+
+__Exercise: Base calling errors__
+The function `readError(noBases)`  simulates the base calling 
+  errors of a sequencing machine. The parameter
+ \texttt{noBases}  represents the  number of positions in the genome sequenced
+ and the function will return a vector, which has the entry "error" if a base 
+ calling error occurs at a certain position and "correct" if  the base is 
+ read correctly. It can be obtained with the command 
+
+` source("readError.R")`
+
+* Let the sequencer read a thousand positions and try to infer a base calling 
+error rate from this simulation
+HINT: The functions  `table`  and `prop.table` could be handy for this!
+* Let us assume the technology improves and the machine is less prone to  errors.
+Change the function accordingly!
+
+
+__Solution: Base calling errors__
+```{r sol_read,   echo = TRUE, results = 'hide'}
+
+source("readError.R")
+
+test <- readError(1000)
+## number of errors
+sum(test == "error")
+##  error probability
+sum(test == "error") / 1000
+
+prop.table(table(test))
+
+
+readError2 <- function(noBases){
+
+  positions <- integer(noBases) ## initialize vector
+  for (i in 1:noBases ) {	
+    positions[i] <- rbinom(n = 1, size = 1, prob = 0.05)
+  }
+    return(ifelse(positions, "correct", "error"))
+  }
+
+### equivalent function
+rbinom(n = 1000, size = 1, prob = 0.05)
+```
+
+```{r seesionInfo, results='markup'}
+sessionInfo()
+```

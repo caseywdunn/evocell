@@ -1,0 +1,395 @@
+---
+title: "An introduction to R"
+author: "Jonathan Landry"
+date: \'`r format(Sys.time(), '%d %B, %Y')`\'
+output: 
+    BiocStyle::html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        code_folding: show
+    BiocStyle::pdf_document2:
+        toc: true
+        highlight: tango
+---
+
+
+<!--
+To compile this document
+graphics.off();rm(list=ls());rmarkdown::render('R-lab.Rmd');purl('R-lab.Rmd')
+pdf document
+rmarkdown::render('R-lab.Rmd', BiocStyle::pdf_document2())
+-->
+
+# About R
+R is a free software environment for statistical computing and graphics. It runs on a wide variety of UNIX platforms, Windows and MacOS. It can be downloaded from The [R project](http://www.r-project.org) webpage. This website is also a good place to learn more about R.
+
+This tutorial is adapted from Anton Enright EMBO course (2017).
+
+We intend in this practical to show you the basics of R, an introduction to data types and Bioconductor to be able to use it in the following session. R contains a lot more packages and tools in different areas of biology and you can browse to the [Bioconductor](https://bioconductor.org/) website to find the appropriate moduls. 
+
+# Getting Started
+First load up RStudio. You should now see a window like this: ![](rstudio.jpg)
+
+This is the R terminal where we will type commands for both R and Bioconductor.
+
+In this web page, sections like the following contain commands that you can copy and paste into the R terminal. The output you should expect to get from R will be presented like this (below).
+
+```{r}
+p.dir<-"/g/solexa/home/landry/course/Evocell_2019/Intro_R"
+setwd(p.dir)
+getwd()
+print("Welcome to the R Introduction session!")
+```
+
+To get help in R just type a question mark before the name of the command, for example, for the plot function:
+
+```{r}
+?plot
+```
+
+Finally to quit R just type at the prompt:
+
+```{}
+quit()
+```
+
+# Assignment and Operations
+
+Simple operations are easy to calculate in R, including multiplication, division, addition, subtraction etc. Here are some examples results below commands:
+
+```{r,results="hold"}
+10+1
+
+10-5
+
+3*3
+
+15/3
+
+3.75 * sqrt(4)
+```
+
+To save one of these results, we can assign it to a variable, using the "<-" or "=" symbol. We can then use these variables in further operations.
+
+```{r, results="hold"}
+x <- 7+1
+
+y <- 3.75 * sqrt(4)
+
+x + y
+```
+
+One of R's benefits is that it can deal with many numbers at once. In order to tell R that we want to treat a series of numbers as one object, we can use the c command to "combine" objects into a list.
+
+```{r}
+atc <- c(0.5,1,2,4,7,8,9,10,59)
+```
+
+To see what numbers are stored in atc we can just type "atc":
+
+```{r}
+atc
+```
+
+And now, we can perform operations on all of these numbers at once:
+
+```{r,results="hold"}
+atc + 1
+
+atc * 10
+```
+
+We can also use the many functions available in R:
+
+```{r,results="hold"}
+sum(atc)
+mean(atc)
+max(atc)
+min(atc)
+sd(atc)
+range(atc)
+length(atc)
+```
+
+If you don't know the proper command for a mathematical function you might want to use, you can either use the "Search help" option in the "Help" menu, or the "??" command:
+
+```{}
+??deviation
+```
+
+If you wish to work with only one of the numbers you can get access to it
+using the variable and then square brackets indicating the position in the series:
+
+```{r,results="hold"}
+atc[1]        # This accesses the first element of atc
+
+atc[6]        # The sixth Element, of atc
+```
+
+Using the **c** command we can also store text (between quotes):
+
+```{r}
+names <- c("Jake", "John", "10X")
+
+names[3]
+```
+
+You now have a list of numbers and are ready to explore. In the sections that follow we will examine the basic operations in R that will allow you to do some of the analyses required in the next practical.
+
+# Object types in R
+
+These objects are simple lists, we will need later to use more complicated objects to store more complicated data.
+
+![](Rclasses.png)
+
+# Questioning the numbers
+
+With R, numbers could be "ask/compare". As an example, in "atc", which values are smaller than 2:
+
+```{r,results="hold"}
+atc
+
+atc < 2
+```
+
+
+We get a list of logical values (TRUE / FALSE). They can be quite useful, as can be seen by the following two examples:
+
+
+```{r,results="hold"}
+sum(atc < 2)
+
+atc[atc < 2]
+```
+
+* What do these commands do?
+* How would you print out the numbers in "atc" that are smaller or larger than the "median" of atc?
+
+# Exercices
+
+## Exercise: Simple R operations
+    
+Define
+
+* `x <- c(4, 2, 6)` 
+
+and
+
+* ` y <- c(1, 0, -1) `
+
+Decide what the result will be of the following:
+
+    
+ * `length(x) `
+ * `sum(x) `
+ * `sum(x^2) `
+ * ` x+y `
+ *  `x*y `
+ * ` x-2 `
+ * ` x^2 `
+
+
+Use R to check your answers.
+
+Decide what the following sequences are and use R to check your answers:
+     
+ * ` 7:11 `
+ *  ` seq(2, 9) `
+ *  ` seq(4, 10, by=2) `
+ *  ` seq(3, 30, length=10) `
+ *  ` seq(6, -4, by=-2) `
+ 
+ 
+Determine what the result will be of the following R expressions, and then use R to check
+whether you are right:
+     
+ *  ` rep(2, 4) `
+ *  ` rep(c(1, 2), 4) `
+ * ` rep(c(1, 2), c(4, 4)) `
+ * ` rep(1:4, 4) `
+ *  ` rep(1:4, rep(3, 4)) `
+     
+Use the `rep` function to define simply the following vectors in R.
+     
+ * `  (6, 6, 6, 6, 6, 6) `
+ * `  (5, 8, 5, 8, 5, 8, 5, 8) `
+ * `  (5, 5, 5, 5, 8, 8, 8, 8) `
+
+
+## Exercise: R as a calculator
+Calculate the following expression, 
+where `x` and `y` have values `-0.25` and `2` 
+respectively. 
+
+Then store the result in a new variable and print its content. 
+
+```{r calcEx, eval = FALSE}
+x + cos(pi/y)
+```   
+
+
+## Exercise: Basic Plotting and Graphing
+Once your data is stored in a variable it is relatively easy to plot. To plot the values we just assigned simply type:
+
+```{r}
+plot(atc)
+```
+
+Different types of plot could be visualised such as:
+
+```{r}
+barplot(atc)
+
+pie(atc)
+```
+
+We can now use some data on flowers (iris) that are available directly with R. 
+
+```{r}
+flowerdata <- iris       # Reads in the included "iris" data and saves it as "flowerdata"
+```
+
+To know what kind of object is flowerdata and what kind of data it contains:
+
+```{r}
+class(flowerdata)
+```
+
+A "data.frame" is a table. The flowerdata data.frame contains information about flowers, which we can open in an external editor, or simply view inside R by typing "flowerdata".
+
+
+```{}
+edit(flowerdata)         # Opens an external editor
+```
+
+To obtain the size of the table, we can use the "dim" function to ask for its dimensions:
+
+```{r}
+dim(flowerdata)
+
+```
+
+The flowerdata has 150 rows and 5 columns. We can use the square brackets to access subsets of the table. In order to access particular cells we need to specify the row number and then the column number separated by a comma.
+By leaving out either the row or the column number we can gain access to complete columns or rows.
+
+```{r}
+flowerdata[5,3]         # the element that is in row 5 and column 3
+
+flowerdata[5,]          # row number 5
+
+flowerdata[,2]            # column number 2
+```
+
+We can use different plots to look at the data:
+
+```{r}
+plot(flowerdata[,2])
+
+hist(flowerdata[,2])
+
+boxplot(flowerdata, col=rainbow(5))
+```
+
+In order to save some of these results as a PDF file, we can do the following:
+
+```{r}
+pdf("flower_images.pdf")
+
+boxplot(flowerdata, col=rainbow(5))
+
+dev.off()
+```
+
+First, the <i>pdf</i> function open a pdf file into the working directory, then print the boxplot image and finally close the file by calling "dev.off()".
+
+
+## Exercise: Genomes
+
+External data could be loaded from a text file.
+
+The file [genomes.txt](genomes.txt) should already be inside your working directory folder on your desktop. We can then load this file into R with the following:
+
+```{r}
+genomes <- read.table("genomes.txt", row.names=1, header=TRUE)
+```
+
+Could you have a look at the content of the file?
+Just try out some more commands:
+
+```{r}
+dim(genomes)
+
+colnames(genomes)
+
+rownames(genomes)
+
+head(genomes)
+
+genomes["mouse",]
+
+summary(genomes)
+```
+
+A data frame can be considered as a simple table where you can add additional column/information. 
+We will compute the average transcript lengths for all available genomes and store it in a column.
+We can then plot the values with a simple barplot function. The "las" argument refers to the graphical parameters (see help "?par").
+
+```{r}
+genomes$Average.transcript.length <- genomes$Transcripts.length/genomes$Transcripts
+
+barplot(genomes$Average.transcript.length, names.arg=rownames(genomes), col="lightblue", las=2)
+```
+
+### Exercises
+
+* Make pie charts of exon versus intron length in each species (shown below)
+* Calculate length of an average human intron. 
+* Which animal genomes have less than 20000 coding sequences?
+* How many exons per gene are on average for each of the available species?
+
+We can start by plotting pie charts of exon vs intron total length for all genomes.
+
+For better visualisation, we will divide the plotting area into 9 parts as there are 9 species.
+
+
+# Answers to exercises
+
+__Solution: Simple R operations__
+
+```{r sol-1,   echo = TRUE, results='hide'}
+rep(6, 6)
+rep(c(5, 8), 4)
+c(rep(5, 4), rep(8, 4))
+```
+
+__Solution: R as a calculator__
+
+```{r sol-2,   echo = TRUE, results='hide'}
+x <-  -0.25
+y <- 2
+x + cos(pi/y)
+```
+
+
+__Solution: Milk sales__
+
+```{r sol-3,   echo = TRUE, results = 'hide'}
+y <- c(33, 44, 29, 16, 25, 45, 33, 19, 54, 22, 21, 49, 11, 24, 56)
+# day of the week summary, example: Tuesday
+Tuesday <- y[ (1:3) + 3 ]
+summary(Tuesday)
+## Shop 2 summary 
+Shop2 <- y[ seq(2, length(y), by = 3 )  ]
+summary(Shop2)
+```
+
+__Solution: Genomes__
+
+```{r sol-4,   echo = TRUE, results = 'hide'}
+par(mfrow = c(3, 3))
+for (species in rownames(genomes)) {
+   print(species)
+   pie(c(genomes[species,"Coding.length"],genomes[species,"Introns.length"]), main=species, labels=c("Exons","Introns"))
+}
+```
